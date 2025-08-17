@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -14,6 +15,72 @@ const Navigation = () => {
   if (!isAuthenticated) {
     return null;
   }
+
+  // Navigation groups for better organization
+  const navigationGroups = {
+    primary: [
+      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/attendance', label: 'Attendance', adminOnly: true }
+    ],
+    management: [
+      { to: '/members', label: 'Members', adminOnly: true },
+      { to: '/signup', label: 'Add User', adminOnly: true }
+    ],
+    tools: [
+      { to: '/attendance/manual', label: 'Manual Entry', adminOrMentor: true },
+      { to: '/attendance/history', label: 'History', adminOrMentor: true }
+    ],
+    system: [
+      { to: '/system-status', label: 'System', adminOnly: true },
+      { to: '/device-admin', label: 'Devices', adminOnly: true }
+    ]
+  };
+
+  const shouldShowLink = (link) => {
+    if (link.adminOnly && user?.role !== 'admin') return false;
+    if (link.adminOrMentor && !['admin', 'mentor'].includes(user?.role)) return false;
+    return true;
+  };
+
+  const DropdownMenu = ({ title, links, isOpen, onToggle }) => (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        className="flex items-center text-xs tracking-wider uppercase transition-colors duration-200 text-gray-400 hover:text-black group"
+      >
+        {title}
+        <svg 
+          className={`ml-1 h-3 w-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 py-2 bg-white border border-gray-100 rounded-sm shadow-lg min-w-[120px] z-50">
+          {links.filter(shouldShowLink).map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={() => onToggle()}
+              className={({ isActive }) =>
+                `block px-4 py-2 text-xs tracking-wider uppercase transition-colors duration-200 ${
+                  isActive 
+                    ? 'text-black font-medium bg-gray-50' 
+                    : 'text-gray-400 hover:text-black hover:bg-gray-50'
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
@@ -28,19 +95,24 @@ const Navigation = () => {
 
           {/* Navigation Links - Desktop */}
           <div className="hidden lg:flex items-center space-x-8">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                  isActive 
-                    ? 'text-black font-medium' 
-                    : 'text-gray-400 hover:text-black'
-                }`
-              }
-            >
-              Dashboard
-            </NavLink>
+            {/* Primary Navigation */}
+            {navigationGroups.primary.filter(shouldShowLink).map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
+                    isActive 
+                      ? 'text-black font-medium' 
+                      : 'text-gray-400 hover:text-black'
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
 
+            {/* Profile Link */}
             <NavLink
               to="/profile"
               className={({ isActive }) =>
@@ -54,107 +126,37 @@ const Navigation = () => {
               Profile
             </NavLink>
 
+            {/* Grouped Navigation for Admin */}
             {user?.role === 'admin' && (
               <>
-                <NavLink
-                  to="/attendance"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Attendance
-                </NavLink>
-
-                <NavLink
-                  to="/members"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Members
-                </NavLink>
-
-                <NavLink
-                  to="/signup"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Signup
-                </NavLink>
-
-                <NavLink
-                  to="/system-status"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  System
-                </NavLink>
-
-                <NavLink
-                  to="/device-admin"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Devices
-                </NavLink>
+                <DropdownMenu
+                  title="Manage"
+                  links={navigationGroups.management}
+                  isOpen={isDropdownOpen === 'management'}
+                  onToggle={() => setIsDropdownOpen(isDropdownOpen === 'management' ? null : 'management')}
+                />
+                
+                <DropdownMenu
+                  title="System"
+                  links={navigationGroups.system}
+                  isOpen={isDropdownOpen === 'system'}
+                  onToggle={() => setIsDropdownOpen(isDropdownOpen === 'system' ? null : 'system')}
+                />
               </>
             )}
 
+            {/* Tools for Admin/Mentor */}
             {(user?.role === 'admin' || user?.role === 'mentor') && (
-              <>
-                <NavLink
-                  to="/attendance/manual"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Manual
-                </NavLink>
-
-                <NavLink
-                  to="/attendance/history"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  History
-                </NavLink>
-              </>
+              <DropdownMenu
+                title="Tools"
+                links={navigationGroups.tools}
+                isOpen={isDropdownOpen === 'tools'}
+                onToggle={() => setIsDropdownOpen(isDropdownOpen === 'tools' ? null : 'tools')}
+              />
             )}
 
             {/* User Info & Logout - Desktop */}
-            <div className="hidden sm:flex items-center space-x-4 border-l border-gray-200 pl-8">
+            <div className="flex items-center space-x-4 border-l border-gray-200 pl-8">
               <div className="text-xs text-gray-400">
                 <span className="capitalize">{user?.role}</span>
                 <span className="mx-2">•</span>
@@ -191,19 +193,23 @@ const Navigation = () => {
 
         {/* Mobile Navigation Links */}
         <div className="lg:hidden border-t border-gray-100 py-4">
-          <div className="flex flex-wrap gap-4">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                  isActive 
-                    ? 'text-black font-medium' 
-                    : 'text-gray-400 hover:text-black'
-                }`
-              }
-            >
-              Dashboard
-            </NavLink>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Primary Navigation */}
+            {navigationGroups.primary.filter(shouldShowLink).map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `text-xs tracking-wider uppercase transition-colors duration-200 ${
+                    isActive 
+                      ? 'text-black font-medium' 
+                      : 'text-gray-400 hover:text-black'
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
 
             <NavLink
               to="/profile"
@@ -218,107 +224,25 @@ const Navigation = () => {
               Profile
             </NavLink>
 
-            {user?.role === 'admin' && (
-              <>
-                <NavLink
-                  to="/attendance"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Attendance
-                </NavLink>
-
-                <NavLink
-                  to="/members"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Members
-                </NavLink>
-
-                <NavLink
-                  to="/signup"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Signup
-                </NavLink>
-
-                <NavLink
-                  to="/system-status"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  System
-                </NavLink>
-
-                <NavLink
-                  to="/device-admin"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Devices
-                </NavLink>
-              </>
-            )}
-
-            {(user?.role === 'admin' || user?.role === 'mentor') && (
-              <>
-                <NavLink
-                  to="/attendance/manual"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  Manual
-                </NavLink>
-
-                <NavLink
-                  to="/attendance/history"
-                  className={({ isActive }) =>
-                    `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                      isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
-                    }`
-                  }
-                >
-                  History
-                </NavLink>
-              </>
-            )}
+            {/* All other navigation links for mobile */}
+            {Object.values(navigationGroups).flat().filter(shouldShowLink).map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `text-xs tracking-wider uppercase transition-colors duration-200 ${
+                    isActive 
+                      ? 'text-black font-medium' 
+                      : 'text-gray-400 hover:text-black'
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
 
             {/* Mobile User Info */}
-            <div className="sm:hidden w-full border-t border-gray-100 pt-4 mt-2">
+            <div className="col-span-2 border-t border-gray-100 pt-4 mt-2">
               <div className="text-xs text-gray-400">
                 <span className="capitalize">{user?.role}</span>
                 <span className="mx-2">•</span>

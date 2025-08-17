@@ -48,7 +48,7 @@ const Login = () => {
             Login
           </h1>
           <p className="text-xs text-gray-400 tracking-wider uppercase">
-            Attendee Attendance System
+            Attendee
           </p>
         </div>
 
@@ -102,7 +102,7 @@ const Login = () => {
         </form>
 
         {/* Default Credentials Info */}
-        <div className="mt-16 p-6 bg-gray-50 border border-gray-100">
+        {/* <div className="mt-16 p-6 bg-gray-50 border border-gray-100">
           <p className="text-xs text-gray-400 tracking-wider uppercase mb-4">
             Default Admin Credentials
           </p>
@@ -113,7 +113,7 @@ const Login = () => {
           <p className="text-xs text-gray-400 mt-4">
             Please change the password after first login
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
