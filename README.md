@@ -88,7 +88,7 @@ attendee/
 | [API Reference](docs/API_REFERENCE.md) | REST API documentation |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
-## 🛠 Technology Stack
+## Technology Stack
 
 - **Backend**: Node.js, Express, MongoDB, JWT, Socket.IO
 - **Frontend**: React 18, Vite, Tailwind CSS, Chart.js
@@ -122,7 +122,7 @@ cd frontend && npm install && npm run dev
 2. Flash firmware using [Firmware Setup Guide](docs/FIRMWARE_SETUP.md)
 3. Configure WiFi through device setup portal
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/AmazingFeature`)
