@@ -1,6 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000';
+// Dynamic API base URL that works in both development and production
+const getApiBaseUrl = () => {
+  // First, check if environment variable is set
+  if (import.meta.env.VITE_API_URL !== undefined) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Fallback logic: In production (when served by nginx), use relative URLs
+  if (import.meta.env.PROD) {
+    return ''; // This will use the same domain as the frontend
+  }
+  
+  // In development, use localhost
+  return 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Create axios instance
 const api = axios.create({

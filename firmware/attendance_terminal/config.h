@@ -75,7 +75,7 @@
 // TIMING CONFIGURATION
 // ========================================
 
-#define HEARTBEAT_INTERVAL 1800000     // 30 minutes in milliseconds (30 * 60 * 1000)
+#define HEARTBEAT_INTERVAL 600000      // 10 minutes in milliseconds (10 * 60 * 1000)
 #define SYNC_RETRY_INTERVAL 10*60*1000  // 1 minute in milliseconds
 #define CARD_READ_DELAY 2000            // Prevent duplicate reads (2 seconds)
 #define LED_DISPLAY_DURATION 2000       // How long to show LED status (2 seconds)
