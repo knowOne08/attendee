@@ -947,7 +947,7 @@ void syncOfflineLogs() {
 }
 
 bool syncSingleLog(String logEntry) {
-  http.begin(wifiClient, backendUrl + "/api/attendance");
+  http.begin(wifiClient, backendUrl + "/attendance");
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(HTTP_TIMEOUT);
   
@@ -983,7 +983,7 @@ void sendHeartbeat() {
   
   Serial.println("Sending heartbeat to backend...");
   
-  http.begin(wifiClient, backendUrl + "/api/device/heartbeat");
+  http.begin(wifiClient, backendUrl + "/device/heartbeat");
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(10000); // 10 second timeout for heartbeat
   

@@ -6,7 +6,7 @@ The Attendee Attendance Terminal is a comprehensive RFID-based attendance tracki
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Attendee Attendance System                  │
+│                    Attendee                  │
 ├─────────────────┬─────────────────┬─────────────────┬───────────┤
 │   Hardware      │    Firmware     │     Backend     │  Frontend │
 │   Terminal      │   (ESP8266)     │   (Node.js)     │  (React)  │

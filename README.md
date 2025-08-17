@@ -16,6 +16,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![ESP8266](https://img.shields.io/badge/platform-ESP8266-red.svg)](https://github.com/esp8266/Arduino)
+[![C/C++](https://img.shields.io/badge/firmware-C/C++-blue.svg)](https://cplusplus.com/)
 [![React](https://img.shields.io/badge/frontend-React-blue.svg)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/backend-Node.js-green.svg)](https://nodejs.org/)
 
@@ -45,7 +46,7 @@ cd ../frontend && npm install && npm run dev
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Attendee Attendance System                  │
+│                    Attendee                  │
 ├─────────────────┬─────────────────┬─────────────────┬───────────┤
 │   Hardware      │    Firmware     │     Backend     │  Frontend │
 │   Terminal      │   (ESP8266)     │   (Node.js)     │  (React)  │
@@ -75,18 +76,6 @@ attendee/
 ├── whatsapp-bot/         # Notifications (optional)
 └── docs/                 # Documentation
 ```
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [Project Overview](docs/PROJECT_OVERVIEW.md) | System architecture and tech stack |
-| [Complete Setup](docs/COMPLETE_SETUP.md) | Detailed installation guide |
-| [Hardware Setup](docs/HARDWARE_SETUP.md) | Circuit assembly and wiring |
-| [Firmware Setup](docs/FIRMWARE_SETUP.md) | ESP8266 programming guide |
-| [User Guide](docs/USER_GUIDE.md) | How to use the system |
-| [API Reference](docs/API_REFERENCE.md) | REST API documentation |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
 ## Technology Stack
 
