@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide covers common issues and their solutions for the LaunchLog Attendance Terminal system.
+This guide covers common issues and their solutions for the Attendee Attendance Terminal system.
 
 ## Table of Contents
 

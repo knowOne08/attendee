@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🧪 Testing LaunchLog WhatsApp Bot Setup..."
+echo "🧪 Testing Attendee WhatsApp Bot Setup..."
 echo ""
 
 # Check if we're in the right directory

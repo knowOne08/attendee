@@ -1,6 +1,6 @@
 # Documentation Index
 
-Welcome to the comprehensive documentation for the LaunchLog Attendance Terminal system. This index provides an overview of all available documentation and helps you find the information you need.
+Welcome to the comprehensive documentation for the Attendee Attendance Terminal system. This index provides an overview of all available documentation and helps you find the information you need.
 
 ## 📖 Quick Navigation
 

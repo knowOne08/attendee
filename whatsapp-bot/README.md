@@ -1,6 +1,6 @@
-# LaunchLog WhatsApp Bot
+# Attendee WhatsApp Bot
 
-A WhatsApp bot for the LaunchLog MVP attendance system using the Baileys library.
+A WhatsApp bot for the Attendee MVP attendance system using the Baileys library.
 
 ## Features
 
@@ -13,7 +13,7 @@ A WhatsApp bot for the LaunchLog MVP attendance system using the Baileys library
 ## Requirements
 
 - Node.js (v16 or higher)
-- Running LaunchLog backend server
+- Running Attendee backend server
 - WhatsApp account for bot pairing
 
 ## Installation
@@ -134,4 +134,4 @@ To modify the bot behavior:
 
 ## Support
 
-For technical issues or feature requests, contact the LaunchLog development team.
+For technical issues or feature requests, contact the Attendee development team.

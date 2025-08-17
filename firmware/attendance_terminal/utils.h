@@ -1,6 +1,6 @@
 /*
  * Header file for utility functions
- * LaunchLog Attendance Terminal v2.0
+ * Attendee Attendance Terminal v2.0
  * Updated for MFRC522v2 library
  */
 

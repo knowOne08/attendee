@@ -1,5 +1,5 @@
 /*
- * Configuration file for LaunchLog Attendance Terminal
+ * Configuration file for Attendee Attendance Terminal
  * Updated for MFRC522v2 library with proper pin assignments
  * Modify these settings before uploading firmware
  */
@@ -140,8 +140,8 @@
 // ========================================
 
 #define FIRMWARE_VERSION "2.0.0"
-#define DEVICE_MODEL "LaunchLog Terminal v2"
-#define MANUFACTURER "LaunchLog Systems"
+#define DEVICE_MODEL "Attendee Terminal v2"
+#define MANUFACTURER "Attendee Systems"
 
 // ========================================
 // DEBUGGING CONFIGURATION

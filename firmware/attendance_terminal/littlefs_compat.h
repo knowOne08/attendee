@@ -1,5 +1,5 @@
 /*
- * LittleFS Compatibility Layer for LaunchLog Attendance Terminal
+ * LittleFS Compatibility Layer for Attendee Attendance Terminal
  * Provides seamless migration from SPIFFS to LittleFS
  * Ensures backward compatibility with existing file operations
  */

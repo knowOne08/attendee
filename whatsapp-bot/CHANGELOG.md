@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the LaunchLog WhatsApp Bot will be documented in this file.
+All notable changes to the Attendee WhatsApp Bot will be documented in this file.
 
 ## [1.0.1] - 2025-08-15
 
@@ -24,7 +24,7 @@ All notable changes to the LaunchLog WhatsApp Bot will be documented in this fil
 ## [1.0.0] - 2025-08-15
 
 ### Added
-- 🚀 Initial release of LaunchLog WhatsApp Bot
+- 🚀 Initial release of Attendee WhatsApp Bot
 - 📱 WhatsApp integration using Baileys library
 - 📋 `/today` command to fetch attendance records
 - 🔄 Auto-reconnection on disconnect
@@ -34,7 +34,7 @@ All notable changes to the LaunchLog WhatsApp Bot will be documented in this fil
 - ℹ️ Help system for unknown commands
 
 ### Features
-- Integration with LaunchLog backend API
+- Integration with Attendee backend API
 - Real-time attendance data fetching
 - Clean, formatted message responses
 - Comprehensive error handling

@@ -1,4 +1,4 @@
-# LaunchLog Attendance Terminal
+# Attendee Attendance Terminal
 
 ##  Documentation
 
@@ -45,7 +45,7 @@ cd ../frontend && npm install && npm run dev
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    LaunchLog Attendance System                  │
+│                    Attendee Attendance System                  │
 ├─────────────────┬─────────────────┬─────────────────┬───────────┤
 │   Hardware      │    Firmware     │     Backend     │  Frontend │
 │   Terminal      │   (ESP8266)     │   (Node.js)     │  (React)  │

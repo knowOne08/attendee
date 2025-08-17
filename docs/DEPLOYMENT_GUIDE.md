@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers various deployment strategies for the LaunchLog Attendance Terminal system, from development to production environments.
+This guide covers various deployment strategies for the Attendee Attendance Terminal system, from development to production environments.
 
 ## Table of Contents
 
@@ -97,7 +97,7 @@ LOG_LEVEL=debug
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
 VITE_SOCKET_URL=http://localhost:5000
-VITE_APP_NAME=LaunchLog Attendance (Dev)
+VITE_APP_NAME=Attendee Attendance (Dev)
 VITE_NODE_ENV=development
 ```
 
@@ -194,7 +194,7 @@ LOG_FILE=/var/log/launchlog/app.log
 ```env
 VITE_API_BASE_URL=https://yourdomain.com/api
 VITE_SOCKET_URL=https://yourdomain.com
-VITE_APP_NAME=LaunchLog Attendance
+VITE_APP_NAME=Attendee Attendance
 VITE_NODE_ENV=production
 ```
 
@@ -825,7 +825,7 @@ check_backend() {
     log "Backend: OK"
   else
     log "Backend: FAILED"
-    echo "Backend service is down" | mail -s "LaunchLog Alert" $ALERT_EMAIL
+    echo "Backend service is down" | mail -s "Attendee Alert" $ALERT_EMAIL
   fi
 }
 
@@ -835,7 +835,7 @@ check_database() {
     log "Database: OK"
   else
     log "Database: FAILED"
-    echo "Database is unreachable" | mail -s "LaunchLog Alert" $ALERT_EMAIL
+    echo "Database is unreachable" | mail -s "Attendee Alert" $ALERT_EMAIL
   fi
 }
 
@@ -844,7 +844,7 @@ check_disk() {
   USAGE=$(df /opt/launchlog | awk 'NR==2 {print $5}' | sed 's/%//')
   if [ $USAGE -gt 80 ]; then
     log "Disk: WARNING - $USAGE% used"
-    echo "Disk usage is at $USAGE%" | mail -s "LaunchLog Alert" $ALERT_EMAIL
+    echo "Disk usage is at $USAGE%" | mail -s "Attendee Alert" $ALERT_EMAIL
   else
     log "Disk: OK - $USAGE% used"
   fi
@@ -995,4 +995,4 @@ rm -rf /tmp/attendee
 echo "Recovery test completed"
 ```
 
-This deployment guide provides comprehensive instructions for deploying the LaunchLog Attendance Terminal system in various environments. Choose the deployment strategy that best fits your organization's needs and technical requirements.
+This deployment guide provides comprehensive instructions for deploying the Attendee Attendance Terminal system in various environments. Choose the deployment strategy that best fits your organization's needs and technical requirements.

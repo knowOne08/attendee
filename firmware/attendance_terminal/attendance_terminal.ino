@@ -1,7 +1,7 @@
 /*
- * LaunchLog ESP8266 Attendance Terminal v2.0
+ * Attendee ESP8266 Attendance Terminal v2.0
  * Hardware: ESP8266, RC522 RFID, 1602 LCD, DS3231 RTC, LEDs, Buzzer
- * Author: LaunchLog Team
+ * Author: Attendee Team
  * Version: 2.0.0 - Web-based admin, LittleFS-only storage, MFRC522v2, EEPROM migration
  * 
  * =================================================================
@@ -264,7 +264,7 @@ unsigned long configModeStartTime = 0;
 void setup() {
   Serial.begin(DEBUG_BAUD_RATE);
   Serial.println();
-  Serial.println("=== LaunchLog Attendance Terminal v2.0 ===");
+  Serial.println("=== Attendee Attendance Terminal v2.0 ===");
   Serial.println("Firmware Version: " + String(FIRMWARE_VERSION));
   Serial.println("Updated for MFRC522v2 library");
   
@@ -644,7 +644,7 @@ void initializeWiFi() {
   WiFiManager wifiManager;
   
   // Set custom AP name
-  String apName = "LaunchLog_" + deviceId.substring(deviceId.length() - 6);
+  String apName = "Attendee_" + deviceId.substring(deviceId.length() - 6);
   
   // Set timeout for config portal
   wifiManager.setConfigPortalTimeout(WIFI_CONFIG_PORTAL_TIMEOUT);
@@ -1403,7 +1403,7 @@ void handleSwitchNetwork() {
     
     WiFiManager wifiManager;
     wifiManager.setConfigPortalTimeout(30); // Short timeout
-    wifiManager.autoConnect(("LaunchLog_" + deviceId.substring(deviceId.length() - 6)).c_str());
+    wifiManager.autoConnect(("Attendee_" + deviceId.substring(deviceId.length() - 6)).c_str());
     
     updateDisplay();
   }
@@ -1891,7 +1891,7 @@ void updateLCDDisplay() {
     case LCD_BOOT_SCREEN:
       if (lcdParam1 == "startup") {
         lcd.setCursor(0, 0);
-        lcd.print("  LaunchLog v2  ");
+        lcd.print("  Attendee v2  ");
         lcd.setCursor(0, 1);
         lcd.print("Starting up...");
       } else if (lcdParam1 == "version") {

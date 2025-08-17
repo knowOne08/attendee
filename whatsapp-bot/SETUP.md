@@ -1,4 +1,4 @@
-# 🤖 LaunchLog WhatsApp Bot - Complete Setup Guide
+# 🤖 Attendee WhatsApp Bot - Complete Setup Guide
 
 ## Quick Start
 
@@ -213,7 +213,7 @@ This creates sample users and attendance records for testing.
 - ❌ Error occurred
 
 ### Expected Flow
-1. `🚀 Starting LaunchLog WhatsApp Bot...`
+1. `🚀 Starting Attendee WhatsApp Bot...`
 2. `📱 QR Code for WhatsApp pairing:` (displays QR)
 3. `✅ WhatsApp Bot connected successfully!`
 4. `📨 Received message: "/today" from [number]`

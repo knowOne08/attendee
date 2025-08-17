@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 const SESSION_DIR = './auth_info_baileys';
 
 // Bot class
-class LaunchLogBot {
+class AttendeeBot {
   constructor() {
     this.sock = null;
     this.isConnected = false;
@@ -15,7 +15,7 @@ class LaunchLogBot {
 
   async start() {
     try {
-      console.log('🚀 Starting LaunchLog WhatsApp Bot...');
+      console.log('🚀 Starting Attendee WhatsApp Bot...');
       
       // Load auth state
       const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
@@ -145,14 +145,14 @@ class LaunchLogBot {
   }
 
   async sendHelpMessage(chatId) {
-    const helpMessage = `🤖 *LaunchLog Attendance Bot*
+    const helpMessage = `🤖 *Attendee Attendance Bot*
 
 Available commands:
 
 📋 */today* - Get today's attendance records
 
 ℹ️ *Help & Support*
-This bot helps you check attendance records for the LaunchLog system.
+This bot helps you check attendance records for the Attendee system.
 
 For technical support, contact the system administrator.`;
 
@@ -186,8 +186,8 @@ process.on('SIGTERM', async () => {
 });
 
 // Start the bot
-const bot = new LaunchLogBot();
+const bot = new AttendeeBot();
 bot.start().catch(console.error);
 
-console.log('🔄 LaunchLog WhatsApp Bot starting...');
+console.log('🔄 Attendee WhatsApp Bot starting...');
 console.log('📱 Make sure you have WhatsApp installed on your phone to scan the QR code');

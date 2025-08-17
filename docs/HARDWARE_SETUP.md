@@ -1,6 +1,6 @@
 # Hardware Setup Guide
 
-This guide provides detailed instructions for assembling the hardware components of the LaunchLog Attendance Terminal.
+This guide provides detailed instructions for assembling the hardware components of the Attendee Attendance Terminal.
 
 ## Required Components
 
@@ -395,4 +395,4 @@ void loop() {
 
 ---
 
-**Hardware setup complete!** Your LaunchLog Attendance Terminal hardware should now be ready for firmware upload and testing.
+**Hardware setup complete!** Your Attendee Attendance Terminal hardware should now be ready for firmware upload and testing.

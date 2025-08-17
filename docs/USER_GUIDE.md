@@ -1,6 +1,6 @@
 # User Guide
 
-This guide provides comprehensive instructions for using the LaunchLog Attendance Terminal system.
+This guide provides comprehensive instructions for using the Attendee Attendance Terminal system.
 
 ## Table of Contents
 
@@ -325,7 +325,7 @@ Jane Smith,2023-07-15,09:45 AM,05:00 PM,7h 15m,Late
 1. **Idle State**:
    ```
    ┌─────────────────┐
-   │ LaunchLog v2.0  │
+   │ Attendee v2.0  │
    │ Scan your card  │
    │ WiFi: Connected │
    │ Time: 09:15 AM  │

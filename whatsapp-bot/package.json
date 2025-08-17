@@ -1,7 +1,7 @@
 {
   "name": "launchlog-whatsapp-bot",
   "version": "1.0.0",
-  "description": "WhatsApp bot for LaunchLog MVP attendance system",
+  "description": "WhatsApp bot for Attendee MVP attendance system",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
@@ -21,6 +21,6 @@
     "attendance",
     "bot"
   ],
-  "author": "LaunchLog Team",
+  "author": "Attendee Team",
   "license": "MIT"
 }

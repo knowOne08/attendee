@@ -1,6 +1,6 @@
 # Complete Setup Guide
 
-This guide provides step-by-step instructions for setting up the complete LaunchLog Attendance Terminal system from scratch.
+This guide provides step-by-step instructions for setting up the complete Attendee Attendance Terminal system from scratch.
 
 ## Prerequisites
 
@@ -161,7 +161,7 @@ Configure the following variables:
 VITE_API_URL=http://localhost:5000/api
 
 # Application Configuration
-VITE_APP_NAME=LaunchLog Attendance Terminal
+VITE_APP_NAME=Attendee Attendance Terminal
 VITE_APP_VERSION=2.0.0
 
 # Development Configuration
@@ -334,7 +334,7 @@ Open `firmware/attendance_terminal/config.h`:
 2. Reset the ESP8266
 3. Look for WiFi setup messages
 4. If no WiFi configured, device creates captive portal:
-   - Connect to WiFi network: `LaunchLog_XXXXXX`
+   - Connect to WiFi network: `Attendee_XXXXXX`
    - Browser should open configuration page automatically
    - If not, navigate to: `http://192.168.4.1`
 5. Configure WiFi credentials and backend URL
@@ -343,7 +343,7 @@ Open `firmware/attendance_terminal/config.h`:
 #### Verify Device Operation
 1. Check Serial Monitor for successful connections:
    ```
-   === LaunchLog Attendance Terminal v2.0 ===
+   === Attendee Attendance Terminal v2.0 ===
    WiFi connected: 192.168.1.150
    Backend URL: http://192.168.1.100:5000
    RFID initialized successfully
@@ -572,4 +572,4 @@ For common issues and solutions, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ---
 
-**Setup Complete!** Your LaunchLog Attendance Terminal system should now be fully operational.
+**Setup Complete!** Your Attendee Attendance Terminal system should now be fully operational.

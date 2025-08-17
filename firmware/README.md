@@ -1,4 +1,4 @@
-# LaunchLog Attendance Terminal Firmware
+# Attendee Attendance Terminal Firmware
 
 A comprehensive ESP8266-based RFID attendance tracking system with offline capabilities, real-time clock synchronization, and web-based backend integration.
 
@@ -19,7 +19,7 @@ A comprehensive ESP8266-based RFID attendance tracking system with offline capab
 
 ## System Overview
 
-The LaunchLog Attendance Terminal is an IoT-based attendance tracking solution designed for educational institutions, offices, and organizations. It combines RFID technology with WiFi connectivity to provide real-time attendance monitoring with robust offline capabilities.
+The Attendee Attendance Terminal is an IoT-based attendance tracking solution designed for educational institutions, offices, and organizations. It combines RFID technology with WiFi connectivity to provide real-time attendance monitoring with robust offline capabilities.
 
 ### Key Features
 - **RFID-based attendance**: 13.56MHz MIFARE card support
@@ -267,7 +267,7 @@ void setup() {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   LaunchLog Terminal                        │
+│                   Attendee Terminal                        │
 ├─────────────────────────────────────────────────────────────┤
 │  Application Layer                                          │
 │  ├── Admin Menu System                                      │
@@ -552,7 +552,7 @@ Cleanup Empty Files
 1. **First Boot Sequence**
    ```
    Expected Serial Output:
-   === LaunchLog Attendance Terminal ===
+   === Attendee Attendance Terminal ===
    Firmware Version: 1.0.0
    Hardware initialized successfully
    Config file not found, using defaults
@@ -563,7 +563,7 @@ Cleanup Empty Files
 
 2. **WiFi Configuration**
    ```
-   1. Device creates AP: "LaunchLog_XXXXXX"
+   1. Device creates AP: "Attendee_XXXXXX"
    2. Connect phone/computer to this AP
    3. Browser auto-opens to 192.168.4.1
    4. Select your WiFi network
@@ -1218,7 +1218,7 @@ ESP.deepSleep(30 * 1000000);    // Sleep 30 seconds
 
 ### Backend Server Requirements
 
-The LaunchLog terminal requires a REST API backend server to function. The server must support the following endpoints and data formats.
+The Attendee terminal requires a REST API backend server to function. The server must support the following endpoints and data formats.
 
 #### Base Configuration
 ```
@@ -1434,7 +1434,7 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(3000, () => {
-    console.log('LaunchLog backend running on port 3000');
+    console.log('Attendee backend running on port 3000');
 });
 ```
 

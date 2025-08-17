@@ -1,4 +1,4 @@
-# LaunchLog Attendee System - Frontend
+# Attendee Attendee System - Frontend
 
 A React + Tailwind CSS frontend for the enhanced attendance system with JWT authentication, user management, and role-based access control.
 

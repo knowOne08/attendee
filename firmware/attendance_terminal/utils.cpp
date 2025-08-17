@@ -1,5 +1,5 @@
 /*
- * Utility functions for LaunchLog Attendance Terminal v2.0
+ * Utility functions for Attendee Attendance Terminal v2.0
  * Enhanced features and MFRC522v2 support
  */
 

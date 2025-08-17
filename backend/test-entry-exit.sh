@@ -6,7 +6,7 @@
 API_BASE="http://localhost:3000"
 TEST_RFID="TEST12345"
 
-echo "🧪 Testing LaunchLog Attendance System - Entry/Exit Feature"
+echo "🧪 Testing Attendee Attendance System - Entry/Exit Feature"
 echo "=========================================================="
 
 # Test 1: Record entry

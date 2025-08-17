@@ -1,6 +1,6 @@
 /*
  * ARCHIVED CODE - EC11 Encoder and Admin Menu Features
- * LaunchLog ESP8266 Attendance Terminal v2.0
+ * Attendee ESP8266 Attendance Terminal v2.0
  * 
  * This file contains all the code related to:
  * - EC11 Rotary Encoder (rotation and button handling)

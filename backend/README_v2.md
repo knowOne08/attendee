@@ -1,4 +1,4 @@
-# 🚀 LaunchLog Backend v2.0 - Enhanced Attendance System
+# 🚀 Attendee Backend v2.0 - Enhanced Attendance System
 
 Enhanced Node.js + Express + MongoDB backend with **User Management** and **JWT Authentication** while maintaining full backward compatibility with existing attendance endpoints.
 
@@ -340,4 +340,4 @@ PORT=3000
 
 ---
 
-**🎉 Your LaunchLog backend is now ready with full user management and authentication!**
+**🎉 Your Attendee backend is now ready with full user management and authentication!**

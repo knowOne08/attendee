@@ -1,6 +1,6 @@
 # API Reference
 
-This document provides comprehensive documentation for the LaunchLog Attendance Terminal REST API.
+This document provides comprehensive documentation for the Attendee Attendance Terminal REST API.
 
 ## Base URL
 ```
@@ -554,15 +554,15 @@ curl -X GET http://localhost:5000/api/attendance/today \
 
 ### Using Postman
 
-A Postman collection is available at `/docs/postman/LaunchLog_API.postman_collection.json` with pre-configured requests for all endpoints.
+A Postman collection is available at `/docs/postman/Attendee_API.postman_collection.json` with pre-configured requests for all endpoints.
 
 ## SDKs and Libraries
 
 ### JavaScript/Node.js
 ```javascript
-const LaunchLogAPI = require('launchlog-api-client');
+const AttendeeAPI = require('launchlog-api-client');
 
-const client = new LaunchLogAPI({
+const client = new AttendeeAPI({
   baseURL: 'http://localhost:5000/api',
   token: 'your-jwt-token'
 });
@@ -573,9 +573,9 @@ const result = await client.attendance.record('ABC123456');
 
 ### Python
 ```python
-from launchlog_api import LaunchLogClient
+from launchlog_api import AttendeeClient
 
-client = LaunchLogClient(
+client = AttendeeClient(
     base_url='http://localhost:5000/api',
     token='your-jwt-token'
 )

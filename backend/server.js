@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 // API info endpoint
 app.get('/', (req, res) => {
   res.json({
-    name: 'LaunchLog Attendance System API',
+    name: 'Attendee Attendance System API',
     version: '2.0.0',
     description: 'Enhanced attendance system with user management and JWT authentication',
     endpoints: {

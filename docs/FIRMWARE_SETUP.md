@@ -1,6 +1,6 @@
 # Firmware Setup Guide
 
-This guide provides detailed instructions for setting up, configuring, and deploying the ESP8266 firmware for the LaunchLog Attendance Terminal.
+This guide provides detailed instructions for setting up, configuring, and deploying the ESP8266 firmware for the Attendee Attendance Terminal.
 
 ## Table of Contents
 
@@ -162,7 +162,7 @@ Edit `config.h` file:
 #define HEALTH_ENDPOINT      "/api/health"
 
 // Device Configuration
-#define DEVICE_NAME          "LaunchLog-Terminal"
+#define DEVICE_NAME          "Attendee-Terminal"
 #define FIRMWARE_VERSION     "2.0.0"
 #define SERIAL_BAUD_RATE     115200
 
@@ -331,7 +331,7 @@ After uploading firmware, the device will:
 
 1. **Initialize Hardware**:
    ```
-   LaunchLog Terminal v2.0.0
+   Attendee Terminal v2.0.0
    Initializing hardware...
    [OK] RFID Reader initialized
    [OK] LCD Display initialized  
@@ -344,7 +344,7 @@ After uploading firmware, the device will:
    WiFi: Connecting to saved network...
    WiFi: No saved credentials found
    WiFi: Starting configuration portal
-   Access Point: LaunchLog-Setup
+   Access Point: Attendee-Setup
    Password: 12345678
    IP: 192.168.4.1
    ```
@@ -355,7 +355,7 @@ Monitor the serial output for initialization status:
 
 ```
 =====================================
-LaunchLog Attendance Terminal v2.0.0
+Attendee Attendance Terminal v2.0.0
 =====================================
 
 [INIT] Starting system initialization...
@@ -367,7 +367,7 @@ LaunchLog Attendance Terminal v2.0.0
 [RTC]  Current time: 2023-12-15 14:30:25
 [WIFI] Attempting to connect to saved network...
 [WIFI] No saved credentials, starting AP mode
-[AP]   Access Point started: LaunchLog-Setup
+[AP]   Access Point started: Attendee-Setup
 [AP]   IP Address: 192.168.4.1
 [WEB]  Configuration portal active
 [SYS]  System ready for configuration
@@ -402,7 +402,7 @@ If you see errors during initialization:
 ### Method 1: WiFi Manager (Recommended)
 
 1. **Connect to Setup Network**:
-   - SSID: `LaunchLog-Setup`
+   - SSID: `Attendee-Setup`
    - Password: `12345678`
 
 2. **Open Configuration Portal**:

@@ -110,8 +110,8 @@ const DeviceAdmin = () => {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     try {
-      // Try LaunchLog API first (highest priority) with parallel requests
-      const launchlogPromise = checkLaunchLogDevice(ip, controller.signal);
+      // Try Attendee API first (highest priority) with parallel requests
+      const launchlogPromise = checkAttendeeDevice(ip, controller.signal);
       
       // Simultaneous basic connectivity check
       const basicConnectivityPromise = fetch(`http://${ip}:80`, {
@@ -128,7 +128,7 @@ const DeviceAdmin = () => {
       
       clearTimeout(timeoutId);
       
-      // If LaunchLog device found, return it immediately
+      // If Attendee device found, return it immediately
       if (launchlogDevice.status === 'fulfilled' && launchlogDevice.value) {
         return launchlogDevice.value;
       }
@@ -146,7 +146,7 @@ const DeviceAdmin = () => {
     }
   }, []);
 
-  const checkLaunchLogDevice = useCallback(async (ip, signal) => {
+  const checkAttendeeDevice = useCallback(async (ip, signal) => {
     try {
       const response = await fetch(`http://${ip}/api/config`, {
         method: 'GET',
@@ -163,14 +163,14 @@ const DeviceAdmin = () => {
             deviceId: data.deviceId,
             firmwareVersion: data.firmwareVersion,
             isOnline: data.isOnline,
-            name: `LaunchLog (${data.deviceId.substring(0, 8)})`,
+            name: `Attendee (${data.deviceId.substring(0, 8)})`,
             deviceType: 'launchlog',
             lastSeen: new Date().toISOString()
           };
         }
       }
     } catch (error) {
-      // Not a LaunchLog device
+      // Not a Attendee device
     }
     return null;
   }, []);
@@ -456,7 +456,7 @@ const DeviceAdmin = () => {
 
   const connectToDiscoveredDevice = useCallback(async (device) => {
     if (device.deviceType !== 'launchlog') {
-      showMessage('info', 'Can only connect to LaunchLog devices');
+      showMessage('info', 'Can only connect to Attendee devices');
       return;
     }
     
@@ -961,7 +961,7 @@ const DeviceAdmin = () => {
               </div>
             )}
             <div className="text-xs text-gray-500 bg-gray-50 border border-gray-100 p-3 rounded-none mb-4">
-              <strong>Note:</strong> The device search feature scans your local network for available LaunchLog devices.
+              <strong>Note:</strong> The device search feature scans your local network for available Attendee devices.
               Ensure your computer and the devices are on the same network segment for accurate discovery.
             </div>
             <div className="flex space-x-3">

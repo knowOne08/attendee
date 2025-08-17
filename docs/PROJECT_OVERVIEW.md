@@ -2,11 +2,11 @@
 
 ## System Architecture
 
-The LaunchLog Attendance Terminal is a comprehensive RFID-based attendance tracking system consisting of four main components:
+The Attendee Attendance Terminal is a comprehensive RFID-based attendance tracking system consisting of four main components:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    LaunchLog Attendance System                  │
+│                    Attendee Attendance System                  │
 ├─────────────────┬─────────────────┬─────────────────┬───────────┤
 │   Hardware      │    Firmware     │     Backend     │  Frontend │
 │   Terminal      │   (ESP8266)     │   (Node.js)     │  (React)  │
