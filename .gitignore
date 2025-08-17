@@ -1,0 +1,173 @@
+# LaunchLog Project - Complete .gitignore
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+out/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# React Build
+frontend/build/
+frontend/dist/
+
+# Backend uploads and temp files
+backend/uploads/
+backend/temp/
+backend/logs/
+
+# WhatsApp Bot Session & Media
+whatsapp-bot/auth_info_baileys/
+whatsapp-bot/media/
+whatsapp-bot/logs/
+whatsapp-bot/bot_data.json
+whatsapp-bot/session_data/
+
+# Arduino/Hardware
+hardware/arduino/**/build/
+hardware/arduino/**/.vscode/
+hardware/arduino/**/secrets.h
+hardware/arduino/**/wifi_credentials.h
+
+# KiCad PCB files (keep source, ignore temp)
+hardware/pcb/**/*.kicad_pcb-bak
+hardware/pcb/**/*.kicad_sch-bak
+hardware/pcb/**/*-backups/
+hardware/pcb/**/*-cache.lib
+hardware/pcb/**/*-rescue.lib
+hardware/pcb/**/*-rescue.dcm
+hardware/pcb/**/*.bck
+hardware/pcb/**/*.lck
+hardware/pcb/**/*~
+hardware/pcb/**/fp-info-cache
+
+# 3D Models temp files
+hardware/3d-models/**/*.3mf
+hardware/3d-models/**/*.gcode
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
+
+# Logs
+logs/
+*.log
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+ssl/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Test files
+test-results/
+coverage/
+*.lcov
+
+# Documentation build
+docs/build/
+docs/_build/
+
+# Mobile (React Native)
+mobile/node_modules/
+mobile/ios/build/
+mobile/android/build/
+mobile/android/app/build/
+mobile/.expo/
+mobile/expo-env.d.ts
+
+# Production deployment files
+*.tar.gz
+*.zip
+deploy/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Media uploads
+uploads/
+media/
+images/user-uploads/
+
+# Configuration backups
+config-backup/
+
+# Analytics and monitoring
+analytics-data/
+monitoring-logs/
+
+# Security
+secrets/
+private-keys/
+auth-tokens/
