@@ -3,8 +3,6 @@ name: Deploy to Production
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   deploy:
@@ -13,39 +11,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: |
-          frontend/package-lock.json
-          backend/package-lock.json
-    
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm ci
-        
-    - name: Install backend dependencies
-      run: |
-        cd backend
-        npm ci
-        
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-        
-    - name: Run tests (if you have any)
-      run: |
-        cd frontend
-        # npm test -- --coverage --watchAll=false
-        echo "Tests would run here"
         
     - name: Deploy to server
-      if: github.ref == 'refs/heads/main'
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.HOST }}
@@ -53,4 +20,5 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd /root/attendee
+          git pull origin main
           bash deploy-auto.sh

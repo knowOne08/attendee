@@ -48,7 +48,7 @@ const Login = () => {
             Login
           </h1>
           <p className="text-xs text-gray-400 tracking-wider uppercase">
-            Attendee
+            Attendeee
           </p>
         </div>
 
