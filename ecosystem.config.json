@@ -1,0 +1,27 @@
+{
+  "apps": [
+    {
+      "name": "attendee-backend",
+      "script": "./server.js",
+      "cwd": "/root/attendee/backend",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": 3000
+      },
+      "env_production": {
+        "NODE_ENV": "production",
+        "PORT": 3000
+      },
+      "instances": 1,
+      "exec_mode": "fork",
+      "watch": false,
+      "max_memory_restart": "200M",
+      "error_file": "/var/log/pm2/attendee-backend-error.log",
+      "out_file": "/var/log/pm2/attendee-backend-out.log",
+      "log_file": "/var/log/pm2/attendee-backend.log",
+      "time": true,
+      "autorestart": true,
+      "restart_delay": 1000
+    }
+  ]
+}
