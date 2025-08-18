@@ -18,7 +18,21 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
+        port: 22
+        timeout: 60s
+        command_timeout: 15m
         script: |
-          cd /root/attendee
-          git pull origin main
-          bash deploy-auto.sh
+          set -e
+          echo "🔍 Current directory: $(pwd)"
+          echo "🔍 User: $(whoami)"
+          
+          echo "📁 Navigating to project directory..."
+          cd /root/attendee || { echo "❌ Failed to navigate to /root/attendee"; exit 1; }
+          
+          echo "📥 Pulling latest changes..."
+          git pull origin main || { echo "❌ Git pull failed"; exit 1; }
+          
+          echo "🚀 Running deployment script..."
+          bash deploy-auto.sh || { echo "❌ Deployment script failed"; exit 1; }
+          
+          echo "✅ Deployment completed successfully!"
