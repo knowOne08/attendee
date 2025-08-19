@@ -474,23 +474,96 @@ void syncTimeWithNTP() {
 }
 
 // ========================================
-// AUDIO FEEDBACK FUNCTIONS
+// AUDIO FEEDBACK FUNCTIONS - ENHANCED MELODIES
 // ========================================
 
 void playSuccessBeep() {
   if (BUZZER_ENABLED) {
-    tone(BUZZER, BUZZER_SUCCESS_FREQ, BUZZER_SUCCESS_DURATION);
+    // Pleasant success melody: C5 -> E5 -> G5 -> C6 (ascending major arpeggio)
+    tone(BUZZER, 523, 120);  // C5
+    delay(120);
+    tone(BUZZER, 659, 120);  // E5
+    delay(120);
+    tone(BUZZER, 784, 120);  // G5
+    delay(120);
+    tone(BUZZER, 1047, 180); // C6 - triumphant end
   }
 }
 
 void playErrorBeep() {
   if (BUZZER_ENABLED) {
-    tone(BUZZER, BUZZER_ERROR_FREQ, BUZZER_ERROR_DURATION);
+    // Distinctive error pattern: Descending harsh tones
+    tone(BUZZER, 300, 200);
+    delay(100);
+    tone(BUZZER, 250, 200);
+    delay(100);
+    tone(BUZZER, 200, 400);  // Long low tone for emphasis
   }
 }
 
 void playOfflineBeep() {
   if (BUZZER_ENABLED) {
-    tone(BUZZER, BUZZER_OFFLINE_FREQ, BUZZER_OFFLINE_DURATION);
+    // Offline pattern: Three gentle medium tones (like a notification)
+    tone(BUZZER, 550, 150);
+    delay(120);
+    tone(BUZZER, 650, 150);
+    delay(120);
+    tone(BUZZER, 550, 200);
+  }
+}
+
+void playCardDetectedBeep() {
+  if (BUZZER_ENABLED) {
+    // Quick, bright acknowledgment beep - immediate response
+    tone(BUZZER, 900, 80);   // Short, high-pitched for instant feedback
+  }
+}
+
+void playProcessingBeep() {
+  if (BUZZER_ENABLED) {
+    // Two-tone processing indication - distinct from card detection
+    tone(BUZZER, 700, 60);
+    delay(50);
+    tone(BUZZER, 850, 60);
+    delay(50);
+    tone(BUZZER, 1000, 80);  // Rising tones for "working on it"
+  }
+}
+
+// New enhanced feedback functions for specific scenarios
+void playDuplicateBeep() {
+  if (BUZZER_ENABLED) {
+    // Already logged today - gentle warning pattern
+    tone(BUZZER, 600, 100);
+    delay(80);
+    tone(BUZZER, 500, 100);
+    delay(80);
+    tone(BUZZER, 600, 150);
+  }
+}
+
+void playNetworkErrorBeep() {
+  if (BUZZER_ENABLED) {
+    // Network connection issue - distinctive pattern
+    tone(BUZZER, 400, 100);
+    delay(60);
+    tone(BUZZER, 400, 100);
+    delay(60);
+    tone(BUZZER, 400, 100);
+    delay(150);
+    tone(BUZZER, 300, 250);  // Low final tone
+  }
+}
+
+void playStartupBeep() {
+  if (BUZZER_ENABLED) {
+    // System startup melody - welcoming tune
+    tone(BUZZER, 523, 100);  // C5
+    delay(100);
+    tone(BUZZER, 659, 100);  // E5
+    delay(100);
+    tone(BUZZER, 784, 100);  // G5
+    delay(100);
+    tone(BUZZER, 523, 150);  // C5 - back to start
   }
 }

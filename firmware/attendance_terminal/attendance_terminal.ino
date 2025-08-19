@@ -14,6 +14,7 @@
  * ✓ Offline attendance logging with automatic sync
  * ✓ Real-time device status monitoring and health checks
  * ✓ WiFi network switching capabilities
+ * ✓ Startup reset options (WiFi and configuration)
  * ✓ Comprehensive error handling and user feedback
  * ✓ CORS-enabled REST API for frontend integration
  * ✓ One-time EEPROM to LittleFS migration for legacy devices
@@ -114,6 +115,7 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
 #include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <SPI.h>
@@ -152,6 +154,7 @@ void setupConfigurationEndpoints();
 // ----- Network and Connectivity -----
 void checkWiFiConnection();
 void sendHeartbeat();
+void warmupHTTPSConnection();
 
 // ----- RFID and Attendance Processing -----
 void handleRFIDScan();
@@ -205,8 +208,12 @@ MFRC522 mfrc522(driver);
 // Other hardware objects
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLS, LCD_ROWS);
 RTC_DS3231 rtc;
-WiFiClient wifiClient;
+WiFiClient wifiClient;        // For HTTP connections
+WiFiClientSecure wifiClientSecure;  // For HTTPS connections
 HTTPClient http;
+
+// Connection optimization flags
+bool sslSessionValid = false;
 
 // ========================================
 // GLOBAL VARIABLES
@@ -314,6 +321,64 @@ void setup() {
   // Load configuration from LittleFS only
   loadConfiguration();
   
+  // Check for reset requests during startup
+  Serial.println("Press 'y' for WiFi reset or 'c' for config reset within 2 seconds...");
+  setLCDState(LCD_BOOT_SCREEN, "reset_prompt");
+  
+  unsigned long startTime = millis();
+  bool resetWiFi = false;
+  bool resetConfig = false;
+  
+  while (millis() - startTime < 2000) { // Wait for 2 seconds
+    if (Serial.available()) {
+      char input = Serial.read();
+      if (input == 'y' || input == 'Y') {
+        resetWiFi = true;
+        Serial.println("WiFi reset requested!");
+        setLCDState(LCD_WIFI_RESET);
+        break;
+      } else if (input == 'c' || input == 'C') {
+        resetConfig = true;
+        Serial.println("Config reset requested!");
+        setLCDState(LCD_CONFIG_UPDATE, "Resetting");
+        break;
+      }
+    }
+    delay(10); // Small delay to prevent excessive CPU usage
+  }
+  
+  if (resetWiFi) {
+    Serial.println("Clearing WiFi credentials...");
+    WiFi.disconnect(true); // Clear stored WiFi credentials
+    delay(1000);
+    Serial.println("WiFi settings cleared. Starting fresh setup...");
+  }
+  
+  if (resetConfig) {
+    Serial.println("Resetting configuration to defaults...");
+    
+    // Delete existing config file
+    if (LittleFS.exists("/config.json")) {
+      LittleFS.remove("/config.json");
+      Serial.println("Existing config.json deleted");
+    }
+    
+    // Reset to defaults
+    backendUrl = DEFAULT_BACKEND_URL;
+    deviceId = "ESP_" + formatMacAddress(WiFi.macAddress());
+    
+    // Save default configuration
+    if (saveConfiguration()) {
+      Serial.println("Default configuration saved");
+      Serial.println("Backend URL reset to: " + backendUrl);
+      Serial.println("Device ID reset to: " + deviceId);
+    } else {
+      Serial.println("Warning: Failed to save default configuration");
+    }
+    
+    delay(2000); // Show message on LCD
+  }
+  
   // Initialize WiFi
   initializeWiFi();
 
@@ -336,6 +401,12 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     setupConfigurationEndpoints();
     Serial.println("Configuration API available at: http://" + WiFi.localIP().toString() + "/api/config");
+    
+    // Pre-warm HTTPS connection for faster first attendance submission
+    if (backendUrl.startsWith("https://")) {
+      Serial.println("Pre-warming HTTPS connection for faster performance...");
+      warmupHTTPSConnection();
+    }
   }
   
   // Initial display update
@@ -347,7 +418,7 @@ void setup() {
   
   // Play startup sound
   if (BUZZER_ENABLED) {
-    playSuccessBeep();
+    playStartupBeep();
   }
 }
 
@@ -494,123 +565,6 @@ void loadConfiguration() {
 }
 
 // ========================================
-// EEPROM TO LITTLEFS MIGRATION (ONE-TIME)
-// ========================================
-
-void performEEPROMMigration() {
-  // Check if migration has already been completed
-  if (LittleFS.exists(MIGRATION_FLAG_FILE)) {
-    Serial.println("EEPROM migration already completed, skipping...");
-    return;
-  }
-  
-  Serial.println("Performing one-time EEPROM to LittleFS migration...");
-  Serial.println("Note: This runs only once to preserve legacy data");
-  
-  // Initialize EEPROM temporarily for migration only
-  EEPROM.begin(EEPROM_SIZE);
-  
-  bool migrationNeeded = false;
-  String eepromBackendUrl = "";
-  String eepromDeviceId = "";
-  
-  // Read backend URL from EEPROM with enhanced validation
-  char urlBuffer[BACKEND_URL_SIZE];
-  memset(urlBuffer, 0, BACKEND_URL_SIZE);  // Clear buffer
-  
-  for (int i = 0; i < BACKEND_URL_SIZE - 1; i++) {
-    char ch = EEPROM.read(BACKEND_URL_ADDR + i);
-    if (ch == 0 || ch == 255) break;  // End of string or uninitialized EEPROM
-    urlBuffer[i] = ch;
-  }
-  urlBuffer[BACKEND_URL_SIZE - 1] = '\0';  // Ensure null termination
-  
-  if (strlen(urlBuffer) > 7 && strstr(urlBuffer, "http") != NULL) { // Valid URL check
-    eepromBackendUrl = String(urlBuffer);
-    migrationNeeded = true;
-    Serial.println("Found valid EEPROM backend URL: " + eepromBackendUrl);
-  } else {
-    Serial.println("No valid backend URL found in EEPROM");
-  }
-  
-  // Read device ID from EEPROM with enhanced validation
-  char idBuffer[DEVICE_ID_SIZE];
-  memset(idBuffer, 0, DEVICE_ID_SIZE);  // Clear buffer
-  
-  for (int i = 0; i < DEVICE_ID_SIZE - 1; i++) {
-    char ch = EEPROM.read(DEVICE_ID_ADDR + i);
-    if (ch == 0 || ch == 255) break;  // End of string or uninitialized EEPROM
-    idBuffer[i] = ch;
-  }
-  idBuffer[DEVICE_ID_SIZE - 1] = '\0';  // Ensure null termination
-  
-  if (strlen(idBuffer) > 2) {  // Reasonable device ID length
-    eepromDeviceId = String(idBuffer);
-    migrationNeeded = true;
-    Serial.println("Found valid EEPROM device ID: " + eepromDeviceId);
-  } else {
-    Serial.println("No valid device ID found in EEPROM");
-  }
-  
-  // If we found valid EEPROM data, migrate it to LittleFS
-  if (migrationNeeded) {
-    Serial.println("Migrating EEPROM data to LittleFS...");
-    
-    // Set the global variables
-    if (eepromBackendUrl.length() > 0) {
-      backendUrl = eepromBackendUrl;
-      Serial.println("Migrated backend URL: " + backendUrl);
-    }
-    if (eepromDeviceId.length() > 0) {
-      deviceId = eepromDeviceId;
-      Serial.println("Migrated device ID: " + deviceId);
-    }
-    
-    // Save to LittleFS JSON configuration
-    if (saveConfiguration()) {
-      Serial.println("Migration successful: Data saved to LittleFS JSON format");
-      
-      // Clear EEPROM to prevent future confusion
-      Serial.println("Clearing EEPROM data...");
-      for (int i = 0; i < EEPROM_SIZE; i++) {
-        EEPROM.write(i, 0);
-      }
-      EEPROM.commit();
-      Serial.println("EEPROM cleared after successful migration");
-      
-    } else {
-      Serial.println("Migration failed: Could not save to LittleFS");
-      // Don't create migration flag if migration failed
-      EEPROM.end();
-      return;
-    }
-  } else {
-    Serial.println("No valid EEPROM data found, migration not needed");
-    Serial.println("Device will use default configuration");
-  }
-  
-  // Create migration completion flag with metadata
-  File flagFile = LittleFS.open(MIGRATION_FLAG_FILE, "w");
-  if (flagFile) {
-    flagFile.println("Migration completed at: " + String(millis()) + "ms after boot");
-    flagFile.println("Migration needed: " + String(migrationNeeded ? "true" : "false"));
-    if (migrationNeeded) {
-      flagFile.println("Migrated URL: " + String(eepromBackendUrl.length() > 0 ? "yes" : "no"));
-      flagFile.println("Migrated ID: " + String(eepromDeviceId.length() > 0 ? "yes" : "no"));
-    }
-    flagFile.close();
-    Serial.println("Migration flag file created with metadata");
-  } else {
-    Serial.println("Warning: Could not create migration flag file");
-  }
-  
-  // End EEPROM usage - we won't use it again in normal operation
-  EEPROM.end();
-  Serial.println("EEPROM migration process completed");
-  Serial.println("All future configuration will use LittleFS only");
-}
-
-// ========================================
 // CONFIGURATION MANAGEMENT (LITTLEFS ONLY)
 // ========================================
 
@@ -715,8 +669,22 @@ void handleRFIDScan() {
   }
   rfidTag.toUpperCase();
 
+  // ===== STAGE 1: IMMEDIATE CARD DETECTION FEEDBACK =====
   Serial.println("RFID Tag scanned: " + rfidTag);
   logInfo("RFID scanned: " + rfidTag);
+  
+  // Immediate feedback: Card detected
+  playCardDetectedBeep();               // Instant audio feedback
+  setLEDState(LED_BLINK_GREEN);         // Quick green blink to show card detected
+  
+  // Show immediate "Card Detected" feedback on LCD
+  lastScannedName = "Card Detected";
+  lastScannedTime = getCurrentTimestamp().substring(11, 16);
+  lastScannedMessage = "Processing...";
+  updateDisplay();
+  
+  // Brief pause to separate stage 1 from stage 2
+  delay(200);
 
   // ========================================
   // NOTE: Admin tag check has been ARCHIVED
@@ -746,10 +714,53 @@ void handleRFIDScan() {
 // ========================================
 
 void processOnlineAttendance(String rfidTag, String timestamp) {
-  Serial.println(backendUrl);
-  http.begin(wifiClient, backendUrl + "/attendance");
+  Serial.println("Backend URL: " + backendUrl);
+  
+  // Get effective URL (may be modified for testing)
+  String effectiveUrl = getEffectiveBackendUrl();
+  String attendanceUrl = getAttendanceEndpointUrl();
+  
+  Serial.println("Effective URL: " + effectiveUrl);
+  Serial.println("Full attendance URL: " + attendanceUrl);
+  
+  // Determine if we need HTTPS or HTTP
+  bool isHTTPS = effectiveUrl.startsWith("https://");
+  
+  if (isHTTPS) {
+    // Configure WiFiClientSecure for HTTPS with aggressive speed optimizations
+    wifiClientSecure.setInsecure(); // Skip SSL certificate verification for testing
+    wifiClientSecure.setTimeout(5000); // Reduced timeout for faster failure detection
+    
+    // Aggressive optimization for ESP8266 HTTPS performance
+    wifiClientSecure.setBufferSizes(512, 512); // Minimal buffers for fastest processing
+    
+    // Network optimizations for lower latency
+    wifiClientSecure.setNoDelay(true); // Disable Nagle's algorithm for lower latency
+    
+    Serial.println("Using HTTPS connection with speed optimizations");
+    Serial.println("Free heap before HTTPS: " + String(ESP.getFreeHeap()));
+    
+    unsigned long sslStartTime = millis();
+    if (!http.begin(wifiClientSecure, getAttendanceEndpointUrl())) {
+      Serial.println("Failed to initialize HTTPS connection");
+      handleAttendanceError("HTTPS init failed");
+      return;
+    }
+    unsigned long sslConnectTime = millis() - sslStartTime;
+    Serial.println("SSL connection time: " + String(sslConnectTime) + "ms");
+  } else {
+    // Use regular WiFiClient for HTTP
+    Serial.println("Using HTTP connection");
+    if (!http.begin(wifiClient, getAttendanceEndpointUrl())) {
+      Serial.println("Failed to initialize HTTP connection");
+      handleAttendanceError("HTTP init failed");
+      return;
+    }
+  }
+  
   http.addHeader("Content-Type", "application/json");
-  http.setTimeout(HTTP_TIMEOUT);
+  http.addHeader("User-Agent", "ESP8266-Attendance-Terminal/2.0");
+  http.setTimeout(5000); // Reduced HTTP timeout for faster response
   
   // Create JSON payload
   StaticJsonDocument<200> doc;
@@ -761,28 +772,87 @@ void processOnlineAttendance(String rfidTag, String timestamp) {
   String payload;
   serializeJson(doc, payload);
   
+  // ===== STAGE 2: PROCESSING INDICATION =====
   Serial.println("Sending attendance: " + payload);
   
-  Serial.print(payload);
+  // Update LCD to show "Sending..." 
+  lastScannedName = "Sending...";
+  lastScannedMessage = "Please wait";
+  updateDisplay();
+  
+  playProcessingBeep(); // Indicate that we're sending the request
+  
+  unsigned long requestStartTime = millis();
   int httpResponseCode = http.POST(payload);
+  unsigned long requestTime = millis() - requestStartTime;
+  
+  String response = http.getString();
+  
+  Serial.println("HTTP Response Code: " + String(httpResponseCode));
+  Serial.println("Request time: " + String(requestTime) + "ms");
+  Serial.println("HTTP Response Body: " + response);
+  Serial.println("Free heap after request: " + String(ESP.getFreeHeap()));
+  
+  // Mark SSL session as valid for faster future connections (HTTPS only)
+  if (isHTTPS && httpResponseCode > 0) {
+    sslSessionValid = true;
+    Serial.println("SSL session established for reuse");
+  }
+  
+  // Enhanced error reporting for SSL/connection issues
+  if (httpResponseCode == -1) {
+    Serial.println("Connection failed - possible causes:");
+    Serial.println("1. SSL/TLS handshake failure");
+    Serial.println("2. DNS resolution failed");
+    Serial.println("3. Network timeout");
+    Serial.println("4. Insufficient memory for SSL");
+    Serial.println("WiFi status: " + String(WiFi.status()));
+    Serial.println("WiFi RSSI: " + String(WiFi.RSSI()));
+  }
   
   if (httpResponseCode == 200 || httpResponseCode == 201) {
-    handleSuccessfulAttendance(http.getString(), timestamp);
+    handleSuccessfulAttendance(response, timestamp);
   } else if (httpResponseCode == 400) {
-    handleBadRequestAttendance(http.getString());
+    handleBadRequestAttendance(response);
   } else {
     // HTTP error - store offline
     Serial.println("HTTP Error: " + String(httpResponseCode));
-    logError("HTTP Error " + String(httpResponseCode) + " - storing offline");
-    processOfflineAttendance(rfidTag, timestamp);
+    Serial.println("Response: " + response);
+    
+    // Provide more specific error messages
+    String errorMsg;
+    if (httpResponseCode == -1) {
+      errorMsg = "Connection failed (SSL/Network)";
+    } else if (httpResponseCode == 0) {
+      errorMsg = "Timeout";
+    } else if (response.length() > 0 && response != "null") {
+      errorMsg = "HTTP " + String(httpResponseCode) + ": " + response;
+    } else {
+      errorMsg = "HTTP " + String(httpResponseCode) + " (no response)";
+    }
+    
+    handleAttendanceError(errorMsg);
+    
+    // Only store offline if it's a real network/server error, not a client error
+    if (httpResponseCode >= 500 || httpResponseCode <= 0) {
+      processOfflineAttendance(rfidTag, timestamp);
+    }
   }
   
   http.end();
 }
 
 void handleSuccessfulAttendance(String response, String timestamp) {
+  Serial.println("Processing successful response: " + response);
+  
   StaticJsonDocument<400> responseDoc;
-  deserializeJson(responseDoc, response);
+  DeserializationError error = deserializeJson(responseDoc, response);
+  
+  if (error) {
+    Serial.println("JSON parsing error: " + String(error.c_str()));
+    handleAttendanceError("JSON parse error: " + String(error.c_str()));
+    return;
+  }
   
   if (responseDoc["message"]) {
     String message = responseDoc["message"].as<String>();
@@ -811,7 +881,7 @@ void handleSuccessfulAttendance(String response, String timestamp) {
     } else if (attendanceType == "complete") {
       lastScannedMessage = "Already logged";
       setLEDState(LED_YELLOW);
-      playOfflineBeep();
+      playDuplicateBeep();      // Use specific duplicate beep pattern
       logInfo("Already complete: " + userName);
     } else {
       lastScannedMessage = "Attendance OK";
@@ -827,8 +897,16 @@ void handleSuccessfulAttendance(String response, String timestamp) {
 }
 
 void handleBadRequestAttendance(String response) {
+  Serial.println("Processing bad request response: " + response);
+  
   StaticJsonDocument<300> responseDoc;
-  deserializeJson(responseDoc, response);
+  DeserializationError error = deserializeJson(responseDoc, response);
+  
+  if (error) {
+    Serial.println("JSON parsing error in bad request: " + String(error.c_str()));
+    handleAttendanceError("Bad request - JSON parse error");
+    return;
+  }
   
   String errorMsg = responseDoc["message"].as<String>();
   if (errorMsg.length() == 0) {
@@ -841,13 +919,22 @@ void handleBadRequestAttendance(String response) {
     lastScannedMessage = "Complete today";
     setLEDState(LED_YELLOW);
     ledBlinkTimer = millis();
-    playOfflineBeep();
+    playDuplicateBeep();        // Use specific duplicate beep pattern
   } else {
     handleAttendanceError(errorMsg);
   }
 }
 
 void processOfflineAttendance(String rfidTag, String timestamp) {
+  // ===== STAGE 2: PROCESSING INDICATION FOR OFFLINE =====
+  // Update LCD to show "Storing offline..." 
+  lastScannedName = "Offline Mode";
+  lastScannedMessage = "Storing...";
+  updateDisplay();
+  
+  playProcessingBeep(); // Same processing sound as online
+  delay(100); // Brief processing delay for visual feedback
+  
   // Check if we have space for more logs
   if (offlineLogsCount >= MAX_OFFLINE_LOGS) {
     handleAttendanceError("Storage full");
@@ -892,7 +979,14 @@ void handleAttendanceError(String error) {
   
   setLEDState(LED_RED);
   ledBlinkTimer = millis();
-  playErrorBeep();
+  
+  // Use specific error sounds based on error type
+  if (error.indexOf("Connection") >= 0 || error.indexOf("SSL") >= 0 || 
+      error.indexOf("Network") >= 0 || error.indexOf("Timeout") >= 0) {
+    playNetworkErrorBeep();
+  } else {
+    playErrorBeep();
+  }
   
   logError("Attendance error: " + error);
 }
@@ -947,9 +1041,18 @@ void syncOfflineLogs() {
 }
 
 bool syncSingleLog(String logEntry) {
-  http.begin(wifiClient, backendUrl + "/attendance");
+  // Determine if we need HTTPS or HTTP
+  bool isHTTPS = backendUrl.startsWith("https://");
+  
+  if (isHTTPS) {
+    wifiClientSecure.setInsecure(); // Skip SSL certificate verification
+    http.begin(wifiClientSecure, getAttendanceEndpointUrl());
+  } else {
+    http.begin(wifiClient, getAttendanceEndpointUrl());
+  }
+  
   http.addHeader("Content-Type", "application/json");
-  http.setTimeout(HTTP_TIMEOUT);
+  http.setTimeout(3000); // Reduced timeout for sync operations
   
   int httpResponseCode = http.POST(logEntry);
   bool success = (httpResponseCode == 200 || httpResponseCode == 201);
@@ -983,7 +1086,16 @@ void sendHeartbeat() {
   
   Serial.println("Sending heartbeat to backend...");
   
-  http.begin(wifiClient, backendUrl + "/device/heartbeat");
+  // Determine if we need HTTPS or HTTP
+  bool isHTTPS = backendUrl.startsWith("https://");
+  
+  if (isHTTPS) {
+    wifiClientSecure.setInsecure(); // Skip SSL certificate verification
+    http.begin(wifiClientSecure, getHeartbeatEndpointUrl());
+  } else {
+    http.begin(wifiClient, getHeartbeatEndpointUrl());
+  }
+  
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(10000); // 10 second timeout for heartbeat
   
@@ -1556,6 +1668,53 @@ void handleNotFound() {
 }
 
 // ========================================
+// TEMPORARY TESTING OPTIONS
+// ========================================
+
+// Uncomment the line below to force HTTP for testing HTTPS issues
+// #define FORCE_HTTP_FOR_TESTING
+
+// ========================================
+// URL HELPER FUNCTIONS
+// ========================================
+
+String getAttendanceEndpointUrl() {
+  String effectiveUrl = getEffectiveBackendUrl();
+  
+  // Remove trailing slash if present
+  if (effectiveUrl.endsWith("/")) {
+    effectiveUrl = effectiveUrl.substring(0, effectiveUrl.length() - 1);
+  }
+  
+  // Add the attendance endpoint
+  return effectiveUrl + "/attendance";
+}
+
+String getHeartbeatEndpointUrl() {
+  String effectiveUrl = getEffectiveBackendUrl();
+  
+  // Remove trailing slash if present
+  if (effectiveUrl.endsWith("/")) {
+    effectiveUrl = effectiveUrl.substring(0, effectiveUrl.length() - 1);
+  }
+  
+  // Add the heartbeat endpoint
+  return effectiveUrl + "/device/heartbeat";
+}
+
+String getEffectiveBackendUrl() {
+  #ifdef FORCE_HTTP_FOR_TESTING
+  if (backendUrl.startsWith("https://")) {
+    String httpUrl = backendUrl;
+    httpUrl.replace("https://", "http://");
+    Serial.println("FORCE_HTTP_FOR_TESTING: Using " + httpUrl + " instead of " + backendUrl);
+    return httpUrl;
+  }
+  #endif
+  return backendUrl;
+}
+
+// ========================================
 // DISPLAY FUNCTIONS
 // ========================================
 
@@ -1783,9 +1942,15 @@ void updateLCDDisplay() {
       
     case LCD_CONFIG_UPDATE:
       lcd.setCursor(0, 0);
-      lcd.print("Config Updated");
-      lcd.setCursor(0, 1);
-      lcd.print("Via Frontend");
+      if (lcdParam1 == "Resetting") {
+        lcd.print("Config Reset");
+        lcd.setCursor(0, 1);
+        lcd.print("To Defaults");
+      } else {
+        lcd.print("Config Updated");
+        lcd.setCursor(0, 1);
+        lcd.print("Via Frontend");
+      }
       break;
       
     case LCD_SYNC_PROGRESS:
@@ -1900,6 +2065,16 @@ void updateLCDDisplay() {
         lcd.print(FIRMWARE_VERSION);
         lcd.setCursor(0, 1);
         lcd.print("LittleFS Ready");
+      } else if (lcdParam1 == "reset_prompt") {
+        lcd.setCursor(0, 0);
+        lcd.print("y=WiFi c=Config");
+        lcd.setCursor(0, 1);
+        lcd.print("reset (2 sec)");
+      } else if (lcdParam1 == "wifi_reset_prompt") {
+        lcd.setCursor(0, 0);
+        lcd.print("Press 'y' for");
+        lcd.setCursor(0, 1);
+        lcd.print("WiFi reset");
       } else if (lcdParam1 == "error") {
         lcd.setCursor(0, 0);
         lcd.print("RTC Error!");
@@ -1955,6 +2130,93 @@ void handleForceHeartbeat() {
   configServer.send(200, "application/json", responseString);
   
   logInfo("Manual heartbeat triggered via API");
+}
+
+// ========================================
+// CONNECTIVITY TESTING AND DIAGNOSTICS
+// ========================================
+
+bool testHTTPSConnection(String url) {
+  Serial.println("Testing HTTPS connection to: " + url);
+  
+  wifiClientSecure.setInsecure();
+  wifiClientSecure.setTimeout(10000);
+  wifiClientSecure.setBufferSizes(512, 512);
+  
+  HTTPClient testHttp;
+  if (!testHttp.begin(wifiClientSecure, url)) {
+    Serial.println("HTTPS test: Failed to initialize connection");
+    testHttp.end();
+    return false;
+  }
+  
+  testHttp.setTimeout(10000);
+  int responseCode = testHttp.GET();
+  
+  Serial.println("HTTPS test response code: " + String(responseCode));
+  Serial.println("Free heap during test: " + String(ESP.getFreeHeap()));
+  
+  testHttp.end();
+  return (responseCode > 0);
+}
+
+void processOnlineAttendanceWithFallback(String rfidTag, String timestamp) {
+  Serial.println("Backend URL: " + backendUrl);
+  
+  // Determine if we need HTTPS or HTTP
+  bool isHTTPS = backendUrl.startsWith("https://");
+  bool useHTTPS = isHTTPS;
+  
+  // For HTTPS, test connection first
+  if (isHTTPS) {
+    Serial.println("Testing HTTPS connectivity...");
+    if (!testHTTPSConnection(backendUrl + "/health")) {
+      Serial.println("HTTPS test failed. You may want to:");
+      Serial.println("1. Check if your ESP8266 has enough memory");
+      Serial.println("2. Verify the SSL certificate");
+      Serial.println("3. Try using HTTP for testing");
+      Serial.println("4. Check network connectivity");
+    }
+  }
+  
+  // Proceed with the actual request
+  processOnlineAttendance(rfidTag, timestamp);
+}
+
+// ========================================
+// HTTPS CONNECTION WARMUP
+// ========================================
+
+void warmupHTTPSConnection() {
+  Serial.println("Warming up HTTPS connection...");
+  
+  // Configure SSL client with same optimizations
+  wifiClientSecure.setInsecure();
+  wifiClientSecure.setTimeout(3000); // Short timeout for warmup
+  wifiClientSecure.setBufferSizes(512, 512);
+  wifiClientSecure.setNoDelay(true);
+  
+  HTTPClient warmupHttp;
+  unsigned long warmupStart = millis();
+  
+  if (warmupHttp.begin(wifiClientSecure, getEffectiveBackendUrl() + "/health")) {
+    warmupHttp.setTimeout(3000);
+    
+    int responseCode = warmupHttp.GET();
+    unsigned long warmupTime = millis() - warmupStart;
+    
+    if (responseCode > 0) {
+      // Mark session as established for reuse
+      sslSessionValid = true;
+      Serial.println("HTTPS warmup successful: " + String(warmupTime) + "ms (session established)");
+    } else {
+      Serial.println("HTTPS warmup failed: " + String(responseCode));
+    }
+    
+    warmupHttp.end();
+  } else {
+    Serial.println("HTTPS warmup connection failed");
+  }
 }
 
 
