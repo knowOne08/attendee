@@ -19,13 +19,21 @@ const Members = () => {
   const { success, error: showError } = useToast();
 
   // Fetch members data
-  const fetchMembers = async () => {
+  const fetchMembers = async (search = '') => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await userAPI.getUsers();
+      const params = {};
+      if (search.trim()) {
+        params.search = search.trim();
+        params.limit = 100; // Increase limit for search results
+      }
+      
+      const response = await userAPI.getUsers(params);
+      console.log(response.data)
       setMembers(response.data.users);
+      setFilteredMembers(response.data.users); // Set filtered members directly
     } catch (err) {
       console.error('Error fetching members:', err);
       setError(err.response?.data?.error || 'Failed to fetch members');
@@ -44,29 +52,26 @@ const Members = () => {
     }
   };
 
-  // Filter members based on search term
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredMembers(members);
-    } else {
-      const filtered = members.filter(member =>
-        member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.rfidTag?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredMembers(filtered);
+  // Handle search - now uses server-side search with debounce
+  const handleSearchChange = async (term) => {
+    setSearchTerm(term);
+    
+    // Clear previous timeout
+    if (window.searchTimeout) {
+      clearTimeout(window.searchTimeout);
     }
-  }, [members, searchTerm]);
+    
+    // Debounce search requests
+    window.searchTimeout = setTimeout(async () => {
+      await fetchMembers(term);
+    }, 300); // Wait 300ms after user stops typing
+  };
 
   // Initial data fetch
   useEffect(() => {
     fetchMembers();
     fetchStats();
   }, []);
-
-  const handleSearchChange = (term) => {
-    setSearchTerm(term);
-  };
 
   const handleAddMember = () => {
     setEditingMember(null);

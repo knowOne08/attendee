@@ -23,8 +23,8 @@
 #define SCL_PIN         5     // D1 - I2C SCL (was conflicting with MOSI)
 
 // LED and Buzzer Pins
-#define GREEN_LED       16    // D0 - Green LED
-#define RED_LED         2     // D4 - Red LED  
+#define GREEN_LED       2    // D0 - Green LED
+#define RED_LED         16   // D4 - Red LED  
 #define BUZZER          0     // D3 - Buzzer (shared with RST_PIN, but different usage)
 
 // ========================================
@@ -60,7 +60,8 @@
 // ========================================
 
 // Default backend server URL (can be changed via configuration)
-#define DEFAULT_BACKEND_URL "http://192.168.1.10:3000"
+// #define DEFAULT_BACKEND_URL "http://192.168.1.10:3000"
+#define DEFAULT_BACKEND_URL "https://api.xrocketry.in/"
 
 // WiFi Configuration Portal settings
 #define WIFI_CONFIG_PORTAL_TIMEOUT 300  // 5 minutes
@@ -84,13 +85,32 @@
 #define BUZZER_OFFLINE_DURATION 300     // Offline beep duration
 
 // ========================================
-// AUDIO FEEDBACK CONFIGURATION
+// AUDIO FEEDBACK CONFIGURATION - ENHANCED
 // ========================================
 
+#define BUZZER_ENABLED true             // Set to false to disable buzzer
+
+// Enhanced buzzer tone frequencies (Hz)
 #define BUZZER_SUCCESS_FREQ 1000        // Success beep frequency (Hz)
 #define BUZZER_ERROR_FREQ 500           // Error beep frequency (Hz)
 #define BUZZER_OFFLINE_FREQ 750         // Offline beep frequency (Hz)
-#define BUZZER_ENABLED true             // Set to false to disable buzzer
+#define BUZZER_CARD_DETECT_FREQ 900     // Immediate card detection frequency (Hz)
+#define BUZZER_PROCESSING_FREQ 850      // Processing indication frequency (Hz)
+#define BUZZER_DUPLICATE_FREQ 600       // Already logged today frequency (Hz)
+#define BUZZER_NETWORK_ERROR_FREQ 400   // Network/connection error frequency (Hz)
+
+// Enhanced buzzer durations (ms)
+#define BUZZER_SUCCESS_DURATION 200     // Success beep duration
+#define BUZZER_ERROR_DURATION 500       // Error beep duration  
+#define BUZZER_OFFLINE_DURATION 300     // Offline beep duration
+#define BUZZER_CARD_DETECT_DURATION 80  // Card detection beep duration
+#define BUZZER_PROCESSING_DURATION 60   // Processing beep duration
+#define BUZZER_DUPLICATE_DURATION 100   // Duplicate beep duration
+#define BUZZER_NETWORK_ERROR_DURATION 100 // Network error beep duration
+
+// Two-stage feedback timing
+#define STAGE1_FEEDBACK_DELAY 200       // Delay between stage 1 and stage 2 (ms)
+#define PROCESSING_FEEDBACK_DELAY 100   // Delay for processing feedback (ms)
 
 // ========================================
 // RFID CONFIGURATION - UPDATED FOR MFRC522v2

@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /users - List all users (admin only)
 router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, role, search } = req.query;
+    const { page = 1, limit = 20, status, role, search } = req.query;
     
     // Build filter object
     const filter = {};

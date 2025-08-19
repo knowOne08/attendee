@@ -108,6 +108,11 @@ void syncTimeWithNTP();
 void playSuccessBeep();
 void playErrorBeep();
 void playOfflineBeep();
+void playCardDetectedBeep();
+void playProcessingBeep();
+void playDuplicateBeep();        // New: For already logged today
+void playNetworkErrorBeep();     // New: For network/connection issues  
+void playStartupBeep();          // New: System startup sound
 
 // File system utilities
 bool initializeFileSystem();
