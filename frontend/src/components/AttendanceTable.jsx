@@ -3,22 +3,21 @@ import React from 'react';
 const AttendanceTable = ({ attendanceData, loading, error, showUserInfo = true }) => {
   const formatTime = (timestamp) => {
     if (!timestamp) return '--';
-    console.log(timestamp);
-    console.log(new Date(timestamp).toLocaleTimeString('en-IN', {
+    
+    // Remove 'Z' suffix if present and treat as IST
+    const cleanTimestamp = timestamp.replace('Z', '');
+    const date = new Date(cleanTimestamp);
+    
+    return date.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
       timeZone: 'Asia/Kolkata'
-
-    }));
-    return new Date(timestamp).toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
     });
   };
 
   const isComplete = (record) => {
+    console.log(record)
     return record.entryTime && record.exitTime;
   };
 
