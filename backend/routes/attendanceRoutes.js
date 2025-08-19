@@ -5,7 +5,7 @@ const { authMiddleware, adminOrMentorMiddleware, optionalAuthMiddleware } = requ
 
 const router = express.Router();
 
-// POST /attendance - Record attendance with entry/exit logic
+// POST /attendance - Record attendance with entry/exit logic (multiple sessions support)
 router.post('/', async (req, res) => {
   try {
     const { rfidTag, timestamp } = req.body;
@@ -40,14 +40,19 @@ router.post('/', async (req, res) => {
     });
     
     if (!attendance) {
-      // No record exists - create new entry
+      // No record exists - create new entry with first session
       attendance = new Attendance({
         user: user._id,
         date: dateOnly,
-        entryTime: currentTime,
+        sessions: [{
+          entryTime: currentTime,
+          exitTime: null,
+          autoExitSet: false
+        }],
         // Legacy fields for backward compatibility
         userId: user._id,
-        timestamp: currentTime
+        timestamp: currentTime,
+        entryTime: currentTime
       });
       
       await attendance.save();
@@ -55,51 +60,67 @@ router.post('/', async (req, res) => {
       return res.status(201).json({ 
         message: 'Entry time recorded successfully',
         type: 'entry',
+        sessionNumber: 1,
         attendance: {
           id: attendance._id,
           userId: user._id,
           userName: user.name,
           userRole: user.role,
           date: dateOnly,
-          entryTime: currentTime,
-          exitTime: null
+          sessions: attendance.sessions,
+          currentSession: attendance.sessions[0]
         }
       });
     } 
-    else if (attendance.entryTime && !attendance.exitTime) {
-      // Entry exists but no exit - record exit
-      attendance.exitTime = currentTime;
-      await attendance.save();
-      
-      return res.status(200).json({ 
-        message: 'Exit time recorded successfully',
-        type: 'exit',
-        attendance: {
-          id: attendance._id,
-          userId: user._id,
-          userName: user.name,
-          userRole: user.role,
-          date: dateOnly,
-          entryTime: attendance.entryTime,
-          exitTime: currentTime
-        }
-      });
-    }
     else {
-      // Both entry and exit already recorded
-      return res.status(400).json({ 
-        message: 'Already logged entry and exit today',
-        type: 'complete',
-        attendance: {
-          id: attendance._id,
-          userId: user._id,
-          userName: user.name,
-          userRole: user.role,
-          date: dateOnly,
-          entryTime: attendance.entryTime,
-          exitTime: attendance.exitTime
-        }
-      });
+      // Record exists - check last session
+      const lastSession = attendance.sessions[attendance.sessions.length - 1];
+      
+      if (!lastSession.exitTime) {
+        // Last session has no exit - record exit
+        lastSession.exitTime = currentTime;
+        lastSession.autoExitSet = false; // Manual exit
+        await attendance.save();
+        
+        return res.status(200).json({ 
+          message: 'Exit time recorded successfully',
+          type: 'exit',
+          sessionNumber: attendance.sessions.length,
+          attendance: {
+            id: attendance._id,
+            userId: user._id,
+            userName: user.name,
+            userRole: user.role,
+            date: dateOnly,
+            sessions: attendance.sessions,
+            currentSession: lastSession
+          }
+        });
+      } else {
+        // Last session is complete - start new session
+        const newSession = {
+          entryTime: currentTime,
+          exitTime: null,
+          autoExitSet: false
+        };
+        attendance.sessions.push(newSession);
+        await attendance.save();
+        
+        return res.status(201).json({ 
+          message: 'New entry session started',
+          type: 'entry',
+          sessionNumber: attendance.sessions.length,
+          attendance: {
+            id: attendance._id,
+            userId: user._id,
+            userName: user.name,
+            userRole: user.role,
+            date: dateOnly,
+            sessions: attendance.sessions,
+            currentSession: newSession
+          }
+        });
+      }
     }
     
   } catch (error) {
@@ -108,7 +129,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /attendance/manual - Manual attendance recording with type selection
+// POST /attendance/manual - Manual attendance recording with session support
 router.post('/manual', authMiddleware, adminOrMentorMiddleware, async (req, res) => {
   try {
     const { userId, timestamp, type } = req.body;
@@ -157,72 +178,111 @@ router.post('/manual', authMiddleware, adminOrMentorMiddleware, async (req, res)
         });
       }
       
-      // Create new attendance record with entry time
+      // Create new attendance record with first session
       attendance = new Attendance({
         user: userId,
         date: dateOnly,
-        entryTime: recordTime,
+        sessions: [{
+          entryTime: recordTime,
+          exitTime: null,
+          autoExitSet: false
+        }],
         // Legacy fields for backward compatibility
         userId: userId,
-        timestamp: recordTime
+        timestamp: recordTime,
+        entryTime: recordTime
+      });
+      
+      await attendance.save();
+      
+      return res.status(201).json({
+        message: 'Entry time recorded successfully',
+        type: 'entry',
+        sessionNumber: 1,
+        attendance: {
+          id: attendance._id,
+          userId: user._id,
+          userName: user.name,
+          userRole: user.role,
+          date: dateOnly,
+          sessions: attendance.sessions,
+          currentSession: attendance.sessions[0]
+        }
       });
     } else {
-      // Update existing record
+      // Handle existing record with session logic
       if (type === 'entry') {
-        if (attendance.entryTime) {
+        // Check if last session is complete
+        const lastSession = attendance.sessions[attendance.sessions.length - 1];
+        
+        if (!lastSession.exitTime) {
           return res.status(400).json({ 
-            error: 'Entry time already recorded for this date',
-            type: 'already_exists',
+            error: 'Cannot add new entry session. Previous session is still active (no exit time recorded).',
+            type: 'active_session_exists',
             attendance: {
               id: attendance._id,
-              entryTime: attendance.entryTime,
-              exitTime: attendance.exitTime
+              sessions: attendance.sessions,
+              activeSession: lastSession
             }
           });
         }
-        attendance.entryTime = recordTime;
-        // Update legacy timestamp
-        attendance.timestamp = recordTime;
+        
+        // Add new session
+        const newSession = {
+          entryTime: recordTime,
+          exitTime: null,
+          autoExitSet: false
+        };
+        attendance.sessions.push(newSession);
+        await attendance.save();
+        
+        return res.status(201).json({
+          message: 'New entry session started',
+          type: 'entry',
+          sessionNumber: attendance.sessions.length,
+          attendance: {
+            id: attendance._id,
+            userId: user._id,
+            userName: user.name,
+            userRole: user.role,
+            date: dateOnly,
+            sessions: attendance.sessions,
+            currentSession: newSession
+          }
+        });
+        
       } else if (type === 'exit') {
-        if (!attendance.entryTime) {
+        // Find the last session without exit time
+        const lastSession = attendance.sessions[attendance.sessions.length - 1];
+        
+        if (!lastSession || lastSession.exitTime) {
           return res.status(400).json({ 
-            error: 'Cannot record exit time without entry time',
-            type: 'validation_error'
+            error: 'Cannot record exit time. No active entry session found.',
+            type: 'no_active_session'
           });
         }
-        if (attendance.exitTime) {
-          return res.status(400).json({ 
-            error: 'Exit time already recorded for this date',
-            type: 'already_exists',
-            attendance: {
-              id: attendance._id,
-              entryTime: attendance.entryTime,
-              exitTime: attendance.exitTime
-            }
-          });
-        }
-        attendance.exitTime = recordTime;
+        
+        // Set exit time for the last session
+        lastSession.exitTime = recordTime;
+        lastSession.autoExitSet = false; // Manual exit
+        await attendance.save();
+        
+        return res.status(200).json({
+          message: 'Exit time recorded successfully',
+          type: 'exit',
+          sessionNumber: attendance.sessions.length,
+          attendance: {
+            id: attendance._id,
+            userId: user._id,
+            userName: user.name,
+            userRole: user.role,
+            date: dateOnly,
+            sessions: attendance.sessions,
+            currentSession: lastSession
+          }
+        });
       }
     }
-    
-    await attendance.save();
-    
-    // Prepare response
-    const response = {
-      message: `${type.charAt(0).toUpperCase() + type.slice(1)} time recorded successfully`,
-      type: type,
-      attendance: {
-        id: attendance._id,
-        userId: user._id,
-        userName: user.name,
-        userRole: user.role,
-        date: dateOnly,
-        entryTime: attendance.entryTime,
-        exitTime: attendance.exitTime
-      }
-    };
-    
-    res.status(type === 'entry' && !attendance.exitTime ? 201 : 200).json(response);
     
   } catch (error) {
     console.error('Manual attendance recording error:', error);
@@ -244,7 +304,7 @@ router.get('/today', optionalAuthMiddleware, async (req, res) => {
         $gte: startOfDay,
         $lt: endOfDay
       }
-    }).populate('user', 'name rfidTag role status').sort({ entryTime: -1 });
+    }).populate('user', 'name rfidTag role status').sort({ 'sessions.0.entryTime': -1 });
     
     // If no records found with new schema, try legacy schema for backward compatibility
     if (attendanceRecords.length === 0) {
@@ -260,6 +320,11 @@ router.get('/today', optionalAuthMiddleware, async (req, res) => {
         _id: record._id,
         user: record.userId,
         date: startOfDay,
+        sessions: [{
+          entryTime: record.timestamp,
+          exitTime: null,
+          autoExitSet: false
+        }],
         entryTime: record.timestamp,
         exitTime: null,
         createdAt: record.createdAt,
@@ -275,18 +340,28 @@ router.get('/today', optionalAuthMiddleware, async (req, res) => {
       );
     }
     
-    // Format response to include both entry and exit times
-    const formattedRecords = filteredRecords.map(record => ({
-      id: record._id,
-      name: record.user.name,
-      rfidTag: record.user.rfidTag,
-      role: record.user.role,
-      status: record.user.status,
-      entryTime: record.entryTime,
-      exitTime: record.exitTime,
-      // Legacy timestamp for backward compatibility
-      timestamp: record.entryTime
-    }));
+    // Format response to include session data
+    const formattedRecords = filteredRecords.map(record => {
+      const lastSession = record.sessions && record.sessions.length > 0 
+        ? record.sessions[record.sessions.length - 1] 
+        : null;
+      
+      return {
+        id: record._id,
+        name: record.user.name,
+        rfidTag: record.user.rfidTag,
+        role: record.user.role,
+        status: record.user.status,
+        sessions: record.sessions || [],
+        sessionCount: record.sessions ? record.sessions.length : 0,
+        // For compatibility with existing frontend
+        entryTime: record.entryTime || (record.sessions && record.sessions[0] ? record.sessions[0].entryTime : null),
+        exitTime: record.exitTime || (lastSession ? lastSession.exitTime : null),
+        isCurrentlyInside: lastSession && !lastSession.exitTime,
+        // Legacy timestamp for backward compatibility
+        timestamp: record.entryTime || (record.sessions && record.sessions[0] ? record.sessions[0].entryTime : null)
+      };
+    });
     
     res.json(formattedRecords);
     
@@ -514,15 +589,44 @@ router.get('/user/:userId', authMiddleware, async (req, res) => {
     // Get total count
     const total = await Attendance.countDocuments(dateFilter);
     
-    // Format records for consistent response
-    const formattedRecords = attendanceRecords.map(record => ({
-      id: record._id,
-      date: record.date || Attendance.getDateOnly(record.timestamp),
-      entryTime: record.entryTime || record.timestamp,
-      exitTime: record.exitTime,
-      // Legacy timestamp for backward compatibility
-      timestamp: record.entryTime || record.timestamp
-    }));
+    // Format records for consistent response (new session-based format)
+    const formattedRecords = attendanceRecords.map(record => {
+      // Handle both new session-based records and legacy records
+      if (record.sessions && record.sessions.length > 0) {
+        // New session-based format
+        return {
+          id: record._id,
+          date: record.date,
+          sessions: record.sessions,
+          isCurrentlyInside: record.isCurrentlyInside,
+          // Legacy fields for backward compatibility
+          entryTime: record.sessions[0]?.entryTime,
+          exitTime: record.sessions[record.sessions.length - 1]?.exitTime,
+          timestamp: record.sessions[0]?.entryTime
+        };
+      } else {
+        // Legacy format - convert to session format
+        const sessions = [];
+        if (record.entryTime || record.timestamp) {
+          sessions.push({
+            entryTime: record.entryTime || record.timestamp,
+            exitTime: record.exitTime,
+            autoExitSet: false
+          });
+        }
+        
+        return {
+          id: record._id,
+          date: record.date || Attendance.getDateOnly(record.entryTime || record.timestamp),
+          sessions: sessions,
+          isCurrentlyInside: !record.exitTime && (record.entryTime || record.timestamp),
+          // Legacy fields for backward compatibility
+          entryTime: record.entryTime || record.timestamp,
+          exitTime: record.exitTime,
+          timestamp: record.entryTime || record.timestamp
+        };
+      }
+    });
     
     res.json({
       user: {
@@ -684,22 +788,51 @@ router.get('/my', authMiddleware, async (req, res) => {
     
     // Get attendance records
     const attendanceRecords = await Attendance.find(dateFilter)
-      .sort({ date: -1, entryTime: -1, timestamp: -1 })
+      .sort({ date: -1, createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
     
     // Get total count
     const total = await Attendance.countDocuments(dateFilter);
     
-    // Format records for consistent response
-    const formattedRecords = attendanceRecords.map(record => ({
-      id: record._id,
-      date: record.date || Attendance.getDateOnly(record.timestamp),
-      entryTime: record.entryTime || record.timestamp,
-      exitTime: record.exitTime,
-      // Legacy timestamp for backward compatibility
-      timestamp: record.entryTime || record.timestamp
-    }));
+    // Format records for consistent response (new session-based format)
+    const formattedRecords = attendanceRecords.map(record => {
+      // Handle both new session-based records and legacy records
+      if (record.sessions && record.sessions.length > 0) {
+        // New session-based format
+        return {
+          id: record._id,
+          date: record.date,
+          sessions: record.sessions,
+          isCurrentlyInside: record.isCurrentlyInside,
+          // Legacy fields for backward compatibility
+          entryTime: record.sessions[0]?.entryTime,
+          exitTime: record.sessions[record.sessions.length - 1]?.exitTime,
+          timestamp: record.sessions[0]?.entryTime
+        };
+      } else {
+        // Legacy format - convert to session format
+        const sessions = [];
+        if (record.entryTime || record.timestamp) {
+          sessions.push({
+            entryTime: record.entryTime || record.timestamp,
+            exitTime: record.exitTime,
+            autoExitSet: false
+          });
+        }
+        
+        return {
+          id: record._id,
+          date: record.date || Attendance.getDateOnly(record.entryTime || record.timestamp),
+          sessions: sessions,
+          isCurrentlyInside: !record.exitTime && (record.entryTime || record.timestamp),
+          // Legacy fields for backward compatibility
+          entryTime: record.entryTime || record.timestamp,
+          exitTime: record.exitTime,
+          timestamp: record.entryTime || record.timestamp
+        };
+      }
+    });
     
     res.json({
       attendance: formattedRecords,
@@ -714,6 +847,17 @@ router.get('/my', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Get my attendance error:', error);
     res.status(500).json({ error: 'Server error while fetching your attendance' });
+  }
+});
+
+// POST /attendance/auto-exit - Trigger automatic exit for incomplete sessions
+router.post('/auto-exit', authMiddleware, adminOrMentorMiddleware, async (req, res) => {
+  try {
+    const result = await Attendance.autoSetExitTimes();
+    res.json(result);
+  } catch (error) {
+    console.error('Auto-exit error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

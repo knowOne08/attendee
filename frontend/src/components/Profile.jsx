@@ -589,13 +589,16 @@ const Profile = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {attendanceData.map((record, index) => {
-                        const hasExit = record.exitTime;
-                        const entryTime = record.entryTime || record.timestamp;
+                        // Handle both new session structure and legacy structure
+                        const sessions = record.sessions || [];
+                        const lastSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+                        const hasExit = lastSession ? lastSession.exitTime : record.exitTime;
+                        const entryTime = lastSession ? lastSession.entryTime : (record.entryTime || record.timestamp);
                         
                         return (
                           <tr key={record._id || record.id || index} className={`hover:bg-gray-50 transition-colors duration-200 ${hasExit ? 'bg-green-50/30' : ''}`}>
                             <td className="px-4 py-3 text-sm text-black">
-                              {new Date(entryTime).toLocaleDateString('en-US', {
+                              {new Date(record.date || entryTime).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric'
@@ -607,11 +610,16 @@ const Profile = () => {
                                 minute: '2-digit',
                                 hour12: false
                               })}
+                              {sessions.length > 1 && (
+                                <span className="ml-2 text-xs text-gray-500">
+                                  +{sessions.length - 1} more
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm font-mono">
                               {hasExit ? (
                                 <span className="text-black">
-                                  {new Date(record.exitTime).toLocaleTimeString('en-US', {
+                                  {new Date(hasExit).toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                     hour12: false

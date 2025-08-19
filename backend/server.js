@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cron = require('node-cron');
 require('dotenv').config();
 
 // Import routes
@@ -131,5 +132,20 @@ app.listen(PORT, () => {
   console.log(`📋 API info: http://localhost:${PORT}/`);
   console.log(`🔐 Make sure to set JWT_SECRET in your .env file`);
 });
+
+// Schedule auto-exit task to run every day at 9:00 PM
+cron.schedule('0 21 * * *', async () => {
+  console.log('🕘 Running scheduled auto-exit task at 9:00 PM...');
+  try {
+    const result = await Attendance.autoSetExitTimes();
+    console.log('✅ Auto-exit completed:', result.message);
+  } catch (error) {
+    console.error('❌ Auto-exit failed:', error.message);
+  }
+}, {
+  timezone: 'Asia/Kolkata'
+});
+
+console.log('⏰ Auto-exit scheduler set for 9:00 PM IST daily');
 
 module.exports = app;
