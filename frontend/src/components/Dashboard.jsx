@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [attendanceStats, setAttendanceStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSessions, setSelectedSessions] = useState({});
 
   // Get current month's first and last day
   const getCurrentMonthRange = () => {
@@ -23,6 +24,22 @@ const Dashboard = () => {
       startDate: firstDay.toISOString().split('T')[0],
       endDate: lastDay.toISOString().split('T')[0]
     };
+  };
+
+  const getSelectedSession = (recordId, sessions) => {
+    const sessionIndex = selectedSessions[recordId];
+    // Default to last session (most recent) if no selection
+    if (sessionIndex === undefined) {
+      return sessions[sessions.length - 1];
+    }
+    return sessions[sessionIndex] || sessions[sessions.length - 1];
+  };
+
+  const handleSessionSelect = (recordId, sessionIndex) => {
+    setSelectedSessions(prev => ({
+      ...prev,
+      [recordId]: sessionIndex
+    }));
   };
 
   const fetchDashboardData = async () => {
@@ -209,20 +226,41 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {attendanceData.map((record, index) => {
-                    const hasExit = record.exitTime;
-                    const entryTime = record.entryTime || record.timestamp;
+                    // Handle both new session structure and legacy structure  
+                    const sessions = record.sessions || [];
+                    const sessionCount = sessions.length;
+                    const selectedSession = getSelectedSession(record._id || record.id, sessions);
+                    const lastSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+                    const hasExit = selectedSession ? selectedSession.exitTime : (lastSession ? lastSession.exitTime : record.exitTime);
+                    const entryTime = selectedSession ? selectedSession.entryTime : (lastSession ? lastSession.entryTime : (record.entryTime || record.timestamp));
+                    const isCurrentlyInside = record.isCurrentlyInside || (!hasExit && entryTime);
                     
                     return (
                       <tr key={record._id || record.id || index} className={`hover:bg-gray-50 transition-colors duration-200 ${hasExit ? 'bg-green-50/30' : ''}`}>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-black">
-                          {formatDate(entryTime)}
+                          {formatDate(record.date || entryTime)}
                         </td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-black font-mono">
-                          {formatTime(entryTime)}
+                          <div className="flex items-center justify-between">
+                            <span>{formatTime(entryTime)}</span>
+                            {sessionCount > 1 && (
+                              <select
+                                value={selectedSessions[record._id || record.id] ?? (sessionCount - 1)}
+                                onChange={(e) => handleSessionSelect(record._id || record.id, parseInt(e.target.value))}
+                                className="ml-2 text-xs bg-blue-100 text-blue-800 border-0 rounded px-1 py-0.5 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              >
+                                {sessions.map((_, sessionIndex) => (
+                                  <option key={sessionIndex} value={sessionIndex}>
+                                    {sessionIndex + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-mono">
                           {hasExit ? (
-                            <span className="text-black">{formatTime(record.exitTime)}</span>
+                            <span className="text-black">{formatTime(hasExit)}</span>
                           ) : (
                             <span className="text-gray-400">Not yet logged</span>
                           )}

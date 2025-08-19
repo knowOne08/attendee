@@ -181,14 +181,28 @@ const ManualAttendance = () => {
 
     // Validate based on existing attendance and selected type
     if (formData.selectedUser && userAttendance && formData.attendanceType) {
-      if (formData.attendanceType === 'entry' && userAttendance.entryTime) {
-        newErrors.attendanceType = 'Entry time already recorded for this day';
+      const sessions = userAttendance.sessions || [];
+      const openSession = sessions.find(session => session.entryTime && (session.exitTime === null || session.exitTime === undefined));
+      const completedSessions = sessions.filter(session => session.entryTime && session.exitTime);
+      
+      console.log('Validation check:', {
+        userId: formData.selectedUser._id,
+        attendanceType: formData.attendanceType,
+        sessions: sessions,
+        openSession: openSession,
+        completedSessions: completedSessions.length
+      });
+      
+      if (formData.attendanceType === 'entry') {
+        if (openSession) {
+          newErrors.attendanceType = 'There is already an open session (entry without exit). Please record exit first.';
+        }
       }
-      if (formData.attendanceType === 'exit' && userAttendance.exitTime) {
-        newErrors.attendanceType = 'Exit time already recorded for this day';
-      }
-      if (formData.attendanceType === 'exit' && !userAttendance.entryTime) {
-        newErrors.attendanceType = 'Cannot record exit time without entry time';
+      
+      if (formData.attendanceType === 'exit') {
+        if (!openSession) {
+          newErrors.attendanceType = 'Cannot record exit time without an open session (entry time)';
+        }
       }
     }
 
@@ -254,12 +268,42 @@ const ManualAttendance = () => {
         endDate: endOfDay.toISOString().split('T')[0]
       });
 
-      const todayAttendance = response.data.attendance?.find(record => {
-        const recordDate = new Date(record.entryTime || record.timestamp);
-        return recordDate.toDateString() === new Date(date).toDateString();
+      const attendanceRecords = response.data.attendance || response.data || [];
+      
+      // Find attendance record for the selected date
+      const todayAttendance = attendanceRecords.find(record => {
+        // Try different date fields that might exist
+        const recordDate = new Date(record.date || record.createdAt || record.timestamp);
+        const selectedDate = new Date(date);
+        
+        // Compare dates (ignore time)
+        return recordDate.toDateString() === selectedDate.toDateString();
       });
 
-      setUserAttendance(todayAttendance || null);
+      // Convert legacy format to sessions format if needed
+      let processedAttendance = todayAttendance;
+      if (todayAttendance && (!todayAttendance.sessions || todayAttendance.sessions.length === 0)) {
+        // This is a legacy record, convert to sessions format
+        processedAttendance = {
+          ...todayAttendance,
+          sessions: []
+        };
+        
+        if (todayAttendance.entryTime || todayAttendance.timestamp) {
+          processedAttendance.sessions.push({
+            entryTime: todayAttendance.entryTime || todayAttendance.timestamp,
+            exitTime: todayAttendance.exitTime,
+            autoExitSet: false
+          });
+        }
+      }
+
+      console.log('Selected date:', new Date(date).toDateString());
+      console.log('Found attendance:', todayAttendance);
+      console.log('Processed attendance:', processedAttendance);
+      console.log('Sessions:', processedAttendance?.sessions);
+
+      setUserAttendance(processedAttendance || null);
     } catch (err) {
       console.error('Error checking user attendance:', err);
       setUserAttendance(null);
@@ -466,27 +510,55 @@ const ManualAttendance = () => {
           {/* User Attendance Status */}
           {formData.selectedUser && userAttendance && (
             <div className="bg-gray-50 p-4 rounded">
-              <div className="text-xs text-gray-400 tracking-wider uppercase mb-2">Current Status for {new Date(formData.timestamp).toLocaleDateString()}</div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Entry Time:</span>
-                  <span className={userAttendance.entryTime ? 'text-green-600 font-mono' : 'text-gray-400'}>
-                    {userAttendance.entryTime ? 
-                      new Date(userAttendance.entryTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
-                      'Not recorded'
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Exit Time:</span>
-                  <span className={userAttendance.exitTime ? 'text-green-600 font-mono' : 'text-gray-400'}>
-                    {userAttendance.exitTime ? 
-                      new Date(userAttendance.exitTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
-                      'Not recorded'
-                    }
-                  </span>
-                </div>
+              <div className="text-xs text-gray-400 tracking-wider uppercase mb-2">
+                Current Status for {new Date(formData.timestamp).toLocaleDateString()}
               </div>
+              {userAttendance.sessions && userAttendance.sessions.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Debug info */}
+                  <div className="text-xs text-red-500 mb-2">
+                    Debug: Found {userAttendance.sessions.length} sessions
+                  </div>
+                  {userAttendance.sessions.map((session, index) => {
+                    const isOpen = session.entryTime && (session.exitTime === null || session.exitTime === undefined);
+                    return (
+                      <div key={index} className={`border p-3 rounded ${isOpen ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}`}>
+                        <div className="text-xs text-gray-500 mb-2">
+                          Session {index + 1} {isOpen && <span className="text-orange-600">(OPEN)</span>}
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Entry Time:</span>
+                            <span className={session.entryTime ? 'text-green-600 font-mono' : 'text-gray-400'}>
+                              {session.entryTime ? 
+                                new Date(session.entryTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
+                                'Not recorded'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Exit Time:</span>
+                            <span className={session.exitTime ? 'text-green-600 font-mono' : 'text-orange-500'}>
+                              {session.exitTime ? 
+                                new Date(session.exitTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
+                                'Open session'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="text-xs text-gray-500">
+                      Total Sessions: {userAttendance.sessions.length} | 
+                      Open Sessions: {userAttendance.sessions.filter(s => s.entryTime && (s.exitTime === null || s.exitTime === undefined)).length}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">No sessions recorded for this date</div>
+              )}
             </div>
           )}
 
@@ -505,8 +577,9 @@ const ManualAttendance = () => {
             <div className="text-xs text-blue-700 space-y-1">
               <p>• Type to search users by name, email, or RFID tag</p>
               <p>• Use arrow keys ↑↓ to navigate, Enter to select</p>
-              <p>• <strong>Choose "📥 Entry" for check-in or "📤 Exit" for check-out</strong></p>
-              <p>• Exit time requires an existing entry time</p>
+              <p>• <strong>Choose "📥 Entry" to start a new session or "📤 Exit" to end an open session</strong></p>
+              <p>• Users can have multiple sessions per day (entry/exit pairs)</p>
+              <p>• Exit time requires an open session (entry without exit)</p>
               <p>• Only active users are shown in the dropdown</p>
               <p>• Timestamp cannot be in the future</p>
             </div>
@@ -546,45 +619,62 @@ const ManualAttendance = () => {
             <h3 className="text-xs text-gray-400 tracking-wider uppercase mb-4">Recent Attendance Records</h3>
             <div className="space-y-2">
               {recentAttendance.slice(0, 5).map((record) => {
-                const hasExit = record.exitTime;
-                const entryTime = record.entryTime || record.timestamp;
+                const sessions = record.sessions || [];
+                const currentSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+                const hasOpenSession = currentSession && currentSession.entryTime && !currentSession.exitTime;
+                const hasCompletedSession = currentSession && currentSession.entryTime && currentSession.exitTime;
                 const userName = record.userName || record.userId?.name || 'Unknown User';
                 const userEmail = record.userEmail || record.userId?.email;
                 
                 return (
-                  <div key={record._id} className={`flex items-center justify-between p-3 rounded ${hasExit ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div key={record._id} className={`flex items-center justify-between p-3 rounded ${
+                    hasCompletedSession ? 'bg-green-50' : hasOpenSession ? 'bg-yellow-50' : 'bg-gray-50'
+                  }`}>
                     <div className="flex items-center space-x-3">
-                      <div className={`w-6 h-6 text-white flex items-center justify-center text-xs font-medium rounded ${hasExit ? 'bg-green-500' : 'bg-yellow-500'}`}>
+                      <div className={`w-6 h-6 text-white flex items-center justify-center text-xs font-medium rounded ${
+                        hasCompletedSession ? 'bg-green-500' : hasOpenSession ? 'bg-yellow-500' : 'bg-gray-500'
+                      }`}>
                         {userName ? userName.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div>
                         <div className="text-sm text-black">{userName}</div>
                         <div className="text-xs text-gray-400">{userEmail}</div>
+                        <div className="text-xs text-gray-400">
+                          {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+                          {hasOpenSession && ' (1 open)'}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-black font-mono">
-                        {new Date(entryTime).toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                        {hasExit && (
-                          <span className="text-gray-400 mx-1">→</span>
-                        )}
-                        {hasExit && new Date(record.exitTime).toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </div>
+                      {currentSession && (
+                        <div className="text-xs text-black font-mono">
+                          {new Date(currentSession.entryTime).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false
+                          })}
+                          {currentSession.exitTime && (
+                            <>
+                              <span className="text-gray-400 mx-1">→</span>
+                              {new Date(currentSession.exitTime).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: false
+                              })}
+                            </>
+                          )}
+                        </div>
+                      )}
                       <div className="text-xs text-gray-400">
-                        {new Date(entryTime).toLocaleDateString('en-US', { 
+                        {new Date(record.date).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric' 
                         })}
-                        {hasExit && (
+                        {hasCompletedSession && (
                           <span className="ml-2 text-green-600">✓</span>
+                        )}
+                        {hasOpenSession && (
+                          <span className="ml-2 text-yellow-600">●</span>
                         )}
                       </div>
                     </div>
