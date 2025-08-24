@@ -4,6 +4,7 @@ import AttendanceTable from './AttendanceTable';
 import SearchBar from './SearchBar';
 import { attendanceAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import { formatTimeIST } from '../utils/dateUtils';
 
 const Attendance = () => {
   const { user } = useAuth();
@@ -103,7 +104,7 @@ const Attendance = () => {
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-gray-400 tracking-wider uppercase">
             <span>{attendanceData.length} entries</span>
             {lastUpdated && (
-              <span className="hidden sm:inline">Updated {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+              <span className="hidden sm:inline">Updated {formatTimeIST(lastUpdated)}</span>
             )}
             <button
               onClick={handleRefresh}

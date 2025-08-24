@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userAPI, attendanceAPI } from '../api';
+import { formatTimeIST, formatDateIST } from '../utils/dateUtils';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -85,22 +86,9 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Use utility functions for IST formatting
+  const formatDate = (dateString) => formatDateIST(dateString);
+  const formatTime = (dateString) => formatTimeIST(dateString);
 
   if (loading) {
     return (

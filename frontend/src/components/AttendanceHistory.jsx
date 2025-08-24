@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import AttendanceTable from './AttendanceTable';
 import SearchBar from './SearchBar';
+import { formatDateIST, formatTimeIST } from '../utils/dateUtils';
 
 const AttendanceHistory = () => {
   const { user } = useAuth();
@@ -103,19 +104,11 @@ const AttendanceHistory = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return formatDateIST(dateString);
   };
 
   const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatTimeIST(dateString);
   };
 
   // Check if user can delete records (admin or mentor)

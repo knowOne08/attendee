@@ -186,8 +186,7 @@ const Profile = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return formatDateIST(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -598,18 +597,14 @@ const Profile = () => {
                         return (
                           <tr key={record._id || record.id || index} className={`hover:bg-gray-50 transition-colors duration-200 ${hasExit ? 'bg-green-50/30' : ''}`}>
                             <td className="px-4 py-3 text-sm text-black">
-                              {new Date(record.date || entryTime).toLocaleDateString('en-US', {
+                              {formatDateIST(record.date || entryTime, {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric'
                               })}
                             </td>
                             <td className="px-4 py-3 text-sm text-black font-mono">
-                              {new Date(entryTime).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false
-                              })}
+                              {formatTimeIST(entryTime)}
                               {sessions.length > 1 && (
                                 <span className="ml-2 text-xs text-gray-500">
                                   +{sessions.length - 1} more
@@ -619,11 +614,7 @@ const Profile = () => {
                             <td className="px-4 py-3 text-sm font-mono">
                               {hasExit ? (
                                 <span className="text-black">
-                                  {new Date(hasExit).toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
-                                  })}
+                                  {formatTimeIST(hasExit)}
                                 </span>
                               ) : (
                                 <span className="text-gray-400">Not yet logged</span>

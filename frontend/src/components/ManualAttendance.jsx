@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { attendanceAPI, userAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { formatTimeIST, formatDateIST, getCurrentISTForInput, convertInputToISO } from '../utils/dateUtils';
 
 const ManualAttendance = () => {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ const ManualAttendance = () => {
   
   const [formData, setFormData] = useState({
     selectedUser: null,
-    timestamp: new Date().toISOString().slice(0, 16), // Format for datetime-local input
+    timestamp: getCurrentISTForInput(), // Current IST time for datetime-local input
     attendanceType: 'entry' // 'entry' or 'exit'
   });
   const [users, setUsers] = useState([]);
@@ -174,9 +175,16 @@ const ManualAttendance = () => {
       newErrors.attendanceType = 'Please select attendance type';
     }
 
-    // Check if timestamp is not in the future
-    if (formData.timestamp && new Date(formData.timestamp) > new Date()) {
-      newErrors.timestamp = 'Timestamp cannot be in the future';
+    // Check if timestamp is not in the future (compare IST times)
+    if (formData.timestamp) {
+      const inputTime = new Date(formData.timestamp);
+      const now = new Date();
+      // Convert current time to IST for comparison
+      const nowIST = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      
+      if (inputTime > nowIST) {
+        newErrors.timestamp = 'Timestamp cannot be in the future';
+      }
     }
 
     // Validate based on existing attendance and selected type
@@ -224,7 +232,7 @@ const ManualAttendance = () => {
       // Use manual attendance API for precise control
       await attendanceAPI.recordManualAttendance(
         formData.selectedUser._id,
-        new Date(formData.timestamp).toISOString(),
+        convertInputToISO(formData.timestamp),
         formData.attendanceType
       );
       
@@ -233,7 +241,7 @@ const ManualAttendance = () => {
       // Reset form
       setFormData({
         selectedUser: null,
-        timestamp: new Date().toISOString().slice(0, 16),
+        timestamp: getCurrentISTForInput(),
         attendanceType: 'entry'
       });
       setSearchTerm('');
@@ -511,7 +519,7 @@ const ManualAttendance = () => {
           {formData.selectedUser && userAttendance && (
             <div className="bg-gray-50 p-4 rounded">
               <div className="text-xs text-gray-400 tracking-wider uppercase mb-2">
-                Current Status for {new Date(formData.timestamp).toLocaleDateString()}
+                Current Status for {formatDateIST(formData.timestamp)}
               </div>
               {userAttendance.sessions && userAttendance.sessions.length > 0 ? (
                 <div className="space-y-3">
@@ -531,7 +539,7 @@ const ManualAttendance = () => {
                             <span>Entry Time:</span>
                             <span className={session.entryTime ? 'text-green-600 font-mono' : 'text-gray-400'}>
                               {session.entryTime ? 
-                                new Date(session.entryTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
+                                formatTimeIST(session.entryTime) : 
                                 'Not recorded'
                               }
                             </span>
@@ -540,7 +548,7 @@ const ManualAttendance = () => {
                             <span>Exit Time:</span>
                             <span className={session.exitTime ? 'text-green-600 font-mono' : 'text-orange-500'}>
                               {session.exitTime ? 
-                                new Date(session.exitTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 
+                                formatTimeIST(session.exitTime) : 
                                 'Open session'
                               }
                             </span>
@@ -648,28 +656,17 @@ const ManualAttendance = () => {
                     <div className="text-right">
                       {currentSession && (
                         <div className="text-xs text-black font-mono">
-                          {new Date(currentSession.entryTime).toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: false
-                          })}
+                          {formatTimeIST(currentSession.entryTime)}
                           {currentSession.exitTime && (
                             <>
                               <span className="text-gray-400 mx-1">→</span>
-                              {new Date(currentSession.exitTime).toLocaleTimeString('en-US', { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                hour12: false
-                              })}
+                              {formatTimeIST(currentSession.exitTime)}
                             </>
                           )}
                         </div>
                       )}
                       <div className="text-xs text-gray-400">
-                        {new Date(record.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
+                        {formatDateIST(record.date, { month: 'short', day: 'numeric' })}
                         {hasCompletedSession && (
                           <span className="ml-2 text-green-600">✓</span>
                         )}
