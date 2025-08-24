@@ -48,14 +48,16 @@ AttendanceSchema.index({ date: -1 });
 AttendanceSchema.index({ userId: 1, timestamp: -1 });
 AttendanceSchema.index({ timestamp: -1 });
 
-// Helper method to get date without time for grouping
+// Helper method to get date without time for grouping (works with IST timestamps stored directly)
 AttendanceSchema.statics.getDateOnly = function(date) {
+  // Since we're now storing IST timestamps directly, just extract the date part
   const d = new Date(date);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 };
 
 // Method to auto-set exit times at 9 PM for incomplete sessions
 AttendanceSchema.statics.autoSetExitTimes = async function() {
+  // Since we store IST directly, get current time as IST
   const now = new Date();
   const today = this.getDateOnly(now);
   const ninePM = new Date(today);

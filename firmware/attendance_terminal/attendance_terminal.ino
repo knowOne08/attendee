@@ -320,7 +320,6 @@ void setup() {
   
   // Load configuration from LittleFS only
   loadConfiguration();
-  
   // Check for reset requests during startup
   Serial.println("Press 'y' for WiFi reset or 'c' for config reset within 2 seconds...");
   setLCDState(LCD_BOOT_SCREEN, "reset_prompt");
@@ -351,6 +350,12 @@ void setup() {
     Serial.println("Clearing WiFi credentials...");
     WiFi.disconnect(true); // Clear stored WiFi credentials
     delay(1000);
+    
+    // Also clear WiFiManager settings
+    WiFiManager wifiManager;
+    wifiManager.resetSettings();
+    delay(1000);
+    
     Serial.println("WiFi settings cleared. Starting fresh setup...");
   }
   
@@ -376,6 +381,7 @@ void setup() {
       Serial.println("Warning: Failed to save default configuration");
     }
     
+
     delay(2000); // Show message on LCD
   }
   
@@ -416,6 +422,8 @@ void setup() {
   Serial.println("Setup complete. Ready for operation.");
   Serial.println("System ready at: " + String(millis()) + "ms");
   
+  syncOfflineLogs();
+
   // Play startup sound
   if (BUZZER_ENABLED) {
     playStartupBeep();
@@ -645,7 +653,7 @@ void checkWiFiConnection() {
 void handleRFIDScan() {
   // Check for new card with improved error handling
   if (!mfrc522.PICC_IsNewCardPresent()) {
-    Serial.println("Returning from 1");
+    // Serial.println("Returning from 1");
     return;
   }
   
@@ -1415,6 +1423,11 @@ void handleResetWiFi() {
   
   // Clear WiFi credentials
   WiFi.disconnect(true);
+  delay(1000);
+  
+  // Also clear WiFiManager settings
+  WiFiManager wifiManager;
+  wifiManager.resetSettings();
   delay(1000);
   
   setLCDState(LCD_RESTART);
