@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { systemAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import { formatTimeIST } from '../utils/dateUtils';
 
 const SystemStatus = () => {
   const { user } = useAuth();
@@ -111,7 +112,7 @@ const SystemStatus = () => {
           
           {lastChecked && (
             <div className="text-xs text-gray-400 tracking-wider uppercase">
-              Last checked: {lastChecked.toLocaleTimeString()}
+              Last checked: {formatTimeIST(lastChecked)}
             </div>
           )}
         </div>

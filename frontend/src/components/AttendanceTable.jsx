@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatTimeIST, formatDurationIST } from '../utils/dateUtils';
 
 /**
  * AttendanceTable Component
@@ -30,38 +31,11 @@ import React, { useState } from 'react';
  */
 const AttendanceTable = ({ attendanceData, loading, error, showUserInfo = true }) => {
   const [selectedSessions, setSelectedSessions] = useState({});
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '--';
-    
-    // Remove 'Z' suffix if present and treat as IST
-    const cleanTimestamp = timestamp.replace('Z', '');
-    const date = new Date(cleanTimestamp);
-    
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Kolkata'
-    });
-  };
+  // Use the utility function for IST time formatting
+  const formatTime = (timestamp) => formatTimeIST(timestamp);
 
-  const formatDuration = (entryTime, exitTime) => {
-    if (!entryTime || !exitTime) return '--';
-    
-    const entry = new Date(entryTime);
-    const exit = new Date(exitTime);
-    const durationMs = exit - entry;
-    
-    if (durationMs <= 0) return '--';
-    
-    const hours = Math.floor(durationMs / (1000 * 60 * 60));
-    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
+  // Use the utility function for duration formatting
+  const formatDuration = (entryTime, exitTime) => formatDurationIST(entryTime, exitTime);
 
   const isComplete = (record) => {
     if (record.sessions && record.sessions.length > 0) {
@@ -90,13 +64,17 @@ const AttendanceTable = ({ attendanceData, loading, error, showUserInfo = true }
     
     if (totalMs === 0) return '--';
     
+    // Convert total milliseconds to duration string
     const hours = Math.floor(totalMs / (1000 * 60 * 60));
     const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
     
-    if (hours > 0) {
+    if (hours === 0) {
+      return `${minutes}m`;
+    } else if (minutes === 0) {
+      return `${hours}h`;
+    } else {
       return `${hours}h ${minutes}m`;
     }
-    return `${minutes}m`;
   };
 
   const getSelectedSession = (recordId, sessions) => {

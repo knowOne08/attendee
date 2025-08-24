@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { userAPI, attendanceAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { formatDateIST, formatTimeIST } from '../utils/dateUtils';
 
 const UserDetail = () => {
   const { id } = useParams();
@@ -86,7 +87,7 @@ const UserDetail = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateIST(dateString, {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -95,10 +96,7 @@ const UserDetail = () => {
   };
 
   const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatTimeIST(dateString);
   };
 
   const getRoleColor = (role) => {
