@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userAPI, attendanceAPI } from '../api';
+import { formatDateIST, formatTimeIST } from '../utils/dateUtils';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
