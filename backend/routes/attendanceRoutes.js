@@ -5,12 +5,51 @@ const { authMiddleware, adminOrMentorMiddleware, optionalAuthMiddleware } = requ
 
 const router = express.Router();
 
+// Helper function to parse IST timestamps from firmware and store with IST timezone
+function parseISTTimestamp(timestamp) {
+  if (!timestamp) {
+    // If no timestamp provided, use current IST time with timezone
+    const now = new Date();
+    const istTimestamp = now.toLocaleString("sv-SE", {timeZone: "Asia/Kolkata"}) + '+05:30';
+    return new Date(istTimestamp);
+  }
+  
+  // Firmware sends timestamp in format: "2025-08-19T10:26:00" (IST)
+  // We want to store this as "2025-08-19T10:26:00+05:30" in the database
+  
+  const istTimestampWithTimezone = timestamp + '+05:30';
+  const date = new Date(istTimestampWithTimezone);
+  
+  
+  // Verify the date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid timestamp received:', timestamp, 'using current time');
+    const now = new Date();
+    const istTimestamp = now.toLocaleString("sv-SE", {timeZone: "Asia/Kolkata"}) + '+05:30';
+    return new Date(istTimestamp);
+  }
+  
+  console.log('IST timestamp with timezone storage:');
+  console.log('  Input (IST):', timestamp);
+  console.log('  With IST timezone:', istTimestampWithTimezone);
+  console.log('  Stored in database as:', date.toISOString());
+  console.log('  Will be stored as:', istTimestampWithTimezone);
+  console.log(date)
+  
+  return date; 
+}
+
 // POST /attendance - Record attendance with entry/exit logic (multiple sessions support)
 router.post('/', async (req, res) => {
   try {
     const { rfidTag, timestamp } = req.body;
     
     console.log('RFID Tag: ', rfidTag);
+    
+    // Parse timestamp as IST FIRST (firmware sends IST timestamps)
+    const currentTime = parseISTTimestamp(timestamp);
+    console.log('Parsed time for RFID', rfidTag, ':', currentTime.toISOString(), '(from', timestamp, ')');
+    
     // Find user by RFID tag
     const user = await User.findOne({ rfidTag });
     if (!user) {
@@ -29,8 +68,6 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Parse timestamp or use current time
-    const currentTime = timestamp ? new Date(timestamp) : new Date();
     const dateOnly = Attendance.getDateOnly(currentTime);
     
     // Check if attendance record exists for today
@@ -161,7 +198,7 @@ router.post('/manual', authMiddleware, adminOrMentorMiddleware, async (req, res)
       });
     }
     
-    const recordTime = new Date(timestamp);
+    const recordTime = parseISTTimestamp(timestamp);
     const dateOnly = Attendance.getDateOnly(recordTime);
     
     // Find or create attendance record for this date
@@ -293,7 +330,7 @@ router.post('/manual', authMiddleware, adminOrMentorMiddleware, async (req, res)
 // GET /attendance/today - Get today's attendance logs with entry/exit times
 router.get('/today', optionalAuthMiddleware, async (req, res) => {
   try {
-    // Get start and end of today
+    // Get start and end of today (since we store IST directly, use local date)
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
