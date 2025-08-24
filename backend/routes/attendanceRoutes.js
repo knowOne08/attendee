@@ -491,17 +491,16 @@ router.get('/history', authMiddleware, adminOrMentorMiddleware, async (req, res)
       },
       {
         $project: {
+          _id: 1,
           date: { $ifNull: ['$date', { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } }] },
+          sessions: { $ifNull: ['$sessions', []] },
+          user: 1,
+          // Legacy fields for backward compatibility
           entryTime: { $ifNull: ['$entryTime', '$timestamp'] },
           exitTime: 1,
-          userId: '$user._id',
-          userName: '$user.name',
-          userEmail: '$user.email',
-          userRole: '$user.role',
-          userRfidTag: '$user.rfidTag',
-          userStatus: '$user.status',
-          // Legacy timestamp for backward compatibility
-          timestamp: { $ifNull: ['$entryTime', '$timestamp'] }
+          timestamp: { $ifNull: ['$entryTime', '$timestamp'] },
+          createdAt: 1,
+          updatedAt: 1
         }
       },
       { $sort: { date: -1, entryTime: -1, timestamp: -1 } },
@@ -510,6 +509,32 @@ router.get('/history', authMiddleware, adminOrMentorMiddleware, async (req, res)
     ];
     
     const attendanceRecords = await Attendance.aggregate(pipeline);
+    
+    // Format response to match today API structure
+    const formattedRecords = attendanceRecords.map(record => {
+      const lastSession = record.sessions && record.sessions.length > 0 
+        ? record.sessions[record.sessions.length - 1] 
+        : null;
+      
+      return {
+        id: record._id,
+        name: record.user.name,
+        rfidTag: record.user.rfidTag,
+        role: record.user.role,
+        status: record.user.status,
+        sessions: record.sessions || [],
+        sessionCount: record.sessions ? record.sessions.length : 0,
+        // For compatibility with existing frontend
+        entryTime: record.entryTime || (record.sessions && record.sessions[0] ? record.sessions[0].entryTime : null),
+        exitTime: record.exitTime || (lastSession ? lastSession.exitTime : null),
+        isCurrentlyInside: lastSession && !lastSession.exitTime,
+        // Legacy timestamp for backward compatibility  
+        timestamp: record.entryTime || (record.sessions && record.sessions[0] ? record.sessions[0].entryTime : null),
+        date: record.date,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt
+      };
+    });
     
     // Get total count for pagination
     const countPipeline = [
@@ -553,7 +578,7 @@ router.get('/history', authMiddleware, adminOrMentorMiddleware, async (req, res)
     const total = countResult.length > 0 ? countResult[0].total : 0;
     
     res.json({
-      attendance: attendanceRecords,
+      attendance: formattedRecords,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),

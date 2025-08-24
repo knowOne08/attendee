@@ -80,11 +80,19 @@ const AttendanceHistory = () => {
     if (!searchTerm.trim()) {
       setFilteredData(attendanceData);
     } else {
-      const filtered = attendanceData.filter(record =>
-        record.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.userId?.rfidTag?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const filtered = attendanceData.filter(record => {
+        // Handle different data structures:
+        // 1. History API: userName, userEmail, userRfidTag
+        // 2. Today API: name, email, rfidTag 
+        // 3. Legacy: userId.name, userId.email, userId.rfidTag
+        const userName = record.userName || record.name || record.userId?.name || '';
+        const userEmail = record.userEmail || record.email || record.userId?.email || '';
+        const userRfid = record.userRfidTag || record.rfidTag || record.userId?.rfidTag || '';
+        
+        return userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               userRfid.toLowerCase().includes(searchTerm.toLowerCase());
+      });
       setFilteredData(filtered);
     }
   }, [attendanceData, searchTerm]);

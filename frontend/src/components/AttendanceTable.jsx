@@ -132,8 +132,8 @@ const AttendanceTable = ({ attendanceData, loading, error, showUserInfo = true }
       {/* Attendance Records */}
       {attendanceData.map((record, index) => {
         const complete = isComplete(record);
-        const userName = record.name || record.userId?.name || 'Unknown';
-        const userRole = record.role || record.userId?.role;
+        const userName = record.userName || record.name || record.userId?.name || 'Unknown';
+        const userRole = record.userRole || record.role || record.userId?.role;
         
         // Handle both new session structure and legacy structure
         const sessions = record.sessions || [];
