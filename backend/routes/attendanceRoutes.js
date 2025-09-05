@@ -912,13 +912,27 @@ router.get('/my', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /attendance/auto-exit - Trigger automatic exit for incomplete sessions
+// POST /attendance/auto-exit - Trigger automatic cleanup of incomplete sessions
 router.post('/auto-exit', authMiddleware, adminOrMentorMiddleware, async (req, res) => {
   try {
     const result = await Attendance.autoSetExitTimes();
     res.json(result);
   } catch (error) {
     console.error('Auto-exit error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /attendance/check-low-attendance - Check for low attendance and send notifications
+router.post('/check-low-attendance', authMiddleware, adminOrMentorMiddleware, async (req, res) => {
+  try {
+    const { date } = req.body; // Optional date parameter
+    const checkDate = date ? new Date(date) : null;
+    
+    const result = await Attendance.checkLowAttendanceAndNotify(checkDate);
+    res.json(result);
+  } catch (error) {
+    console.error('Low attendance check error:', error);
     res.status(500).json({ error: error.message });
   }
 });
