@@ -6,10 +6,17 @@ const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeMobileSubmenu, setActiveMobileSubmenu] = useState(null);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setActiveMobileSubmenu(null);
   };
 
   if (!isAuthenticated) {
@@ -82,24 +89,96 @@ const Navigation = () => {
     </div>
   );
 
-  return (
-    <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between py-4 sm:py-6">
-          {/* Logo/Title */}
-          <div className="flex-shrink-0">
-            <h1 className="text-lg font-medium text-black tracking-tight">
-              Attendee
-            </h1>
-          </div>
+  const HamburgerIcon = () => (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
 
-          {/* Navigation Links - Desktop */}
-          <div className="hidden lg:flex items-center space-x-8">
-            {/* Primary Navigation */}
-            {navigationGroups.primary.filter(shouldShowLink).map((link) => (
+  const CloseIcon = () => (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+
+  const ChevronIcon = ({ isOpen }) => (
+    <svg 
+      className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+
+  const MobileSubmenu = ({ title, links, isActive, onToggle }) => (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-6 py-4 text-left text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
+      >
+        <span className="text-xs tracking-wider uppercase font-medium">{title}</span>
+        <ChevronIcon isOpen={isActive} />
+      </button>
+      {isActive && (
+        <div className="bg-gray-50">
+          {links.filter(shouldShowLink).map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `block px-8 py-3 text-xs tracking-wider uppercase transition-colors duration-200 ${
+                  isActive 
+                    ? 'text-black font-medium bg-gray-100' 
+                    : 'text-gray-400 hover:text-black hover:bg-gray-100'
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Navigation */}
+      <nav className="hidden lg:block border-b border-gray-100 bg-white sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between py-4 sm:py-6">
+            {/* Logo/Title */}
+            <div className="flex-shrink-0">
+              <h1 className="text-lg font-medium text-black tracking-tight">
+                Attendee
+              </h1>
+            </div>
+
+            {/* Navigation Links - Desktop */}
+            <div className="flex items-center space-x-8">
+              {/* Primary Navigation */}
+              {navigationGroups.primary.filter(shouldShowLink).map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
+                      isActive 
+                        ? 'text-black font-medium' 
+                        : 'text-gray-400 hover:text-black'
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+
+              {/* Profile Link */}
               <NavLink
-                key={link.to}
-                to={link.to}
+                to="/profile"
                 className={({ isActive }) =>
                   `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
                     isActive 
@@ -108,151 +187,174 @@ const Navigation = () => {
                   }`
                 }
               >
-                {link.label}
+                Profile
               </NavLink>
-            ))}
 
-            {/* Profile Link */}
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
-                  isActive 
-                    ? 'text-black font-medium' 
-                    : 'text-gray-400 hover:text-black'
-                }`
-              }
-            >
-              Profile
-            </NavLink>
+              {/* Grouped Navigation for Admin */}
+              {user?.role === 'admin' && (
+                <>
+                  <DropdownMenu
+                    title="Manage"
+                    links={navigationGroups.management}
+                    isOpen={isDropdownOpen === 'management'}
+                    onToggle={() => setIsDropdownOpen(isDropdownOpen === 'management' ? null : 'management')}
+                  />
+                  
+                  <DropdownMenu
+                    title="System"
+                    links={navigationGroups.system}
+                    isOpen={isDropdownOpen === 'system'}
+                    onToggle={() => setIsDropdownOpen(isDropdownOpen === 'system' ? null : 'system')}
+                  />
+                </>
+              )}
 
-            {/* Grouped Navigation for Admin */}
-            {user?.role === 'admin' && (
-              <>
+              {/* Tools for Admin/Mentor */}
+              {(user?.role === 'admin' || user?.role === 'mentor') && (
                 <DropdownMenu
-                  title="Manage"
-                  links={navigationGroups.management}
-                  isOpen={isDropdownOpen === 'management'}
-                  onToggle={() => setIsDropdownOpen(isDropdownOpen === 'management' ? null : 'management')}
+                  title="Tools"
+                  links={navigationGroups.tools}
+                  isOpen={isDropdownOpen === 'tools'}
+                  onToggle={() => setIsDropdownOpen(isDropdownOpen === 'tools' ? null : 'tools')}
                 />
+              )}
+
+              {/* User Info & Logout - Desktop */}
+              <div className="flex items-center space-x-4 border-l border-gray-200 pl-8">
+                <div className="text-xs text-gray-400">
+                  <span className="capitalize">{user?.role}</span>
+                  <span className="mx-2">•</span>
+                  <span className="hidden md:inline">{user?.name}</span>
+                </div>
                 
-                <DropdownMenu
-                  title="System"
-                  links={navigationGroups.system}
-                  isOpen={isDropdownOpen === 'system'}
-                  onToggle={() => setIsDropdownOpen(isDropdownOpen === 'system' ? null : 'system')}
-                />
-              </>
-            )}
-
-            {/* Tools for Admin/Mentor */}
-            {(user?.role === 'admin' || user?.role === 'mentor') && (
-              <DropdownMenu
-                title="Tools"
-                links={navigationGroups.tools}
-                isOpen={isDropdownOpen === 'tools'}
-                onToggle={() => setIsDropdownOpen(isDropdownOpen === 'tools' ? null : 'tools')}
-              />
-            )}
-
-            {/* User Info & Logout - Desktop */}
-            <div className="flex items-center space-x-4 border-l border-gray-200 pl-8">
-              <div className="text-xs text-gray-400">
-                <span className="capitalize">{user?.role}</span>
-                <span className="mx-2">•</span>
-                <span className="hidden md:inline">{user?.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-gray-400 tracking-wider uppercase hover:text-black transition-colors duration-200"
+                >
+                  Logout
+                </button>
               </div>
-              
-              <button
-                onClick={handleLogout}
-                className="text-xs text-gray-400 tracking-wider uppercase hover:text-black transition-colors duration-200"
-              >
-                Logout
-              </button>
             </div>
           </div>
+        </div>
+      </nav>
 
-          {/* Mobile Navigation */}
-          <div className="lg:hidden flex items-center space-x-2">
-            {/* User Initial */}
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-xs font-medium text-gray-400">
-                {user?.name?.charAt(0)}
-              </span>
+      {/* Mobile Navigation */}
+      <div className="lg:hidden">
+        {/* Mobile Top Bar */}
+        <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+          <h1 className="text-lg font-medium text-black tracking-tight">
+            Attendee
+          </h1>
+          
+          <div className="flex items-center space-x-3">
+            <div className="text-xs text-gray-400">
+              <span className="capitalize">{user?.role}</span>
             </div>
-            
-            {/* Mobile Logout */}
             <button
-              onClick={handleLogout}
-              className="text-xs text-gray-400 tracking-wider uppercase hover:text-black transition-colors duration-200 sm:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-gray-400 hover:text-black transition-colors duration-200"
             >
-              Exit
+              {isMobileMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation Links */}
-        <div className="lg:hidden border-t border-gray-100 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Primary Navigation */}
-            {navigationGroups.primary.filter(shouldShowLink).map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                    isActive 
-                      ? 'text-black font-medium' 
-                      : 'text-gray-400 hover:text-black'
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
+        {/* Mobile Floating Menu */}
+        {isMobileMenuOpen && (
+          <div className="fixed top-16 left-4 right-4 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 max-h-[70vh] overflow-y-auto">
+              <div className="py-2">
+                {/* Primary Navigation */}
+                {navigationGroups.primary.filter(shouldShowLink).map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `block px-6 py-4 text-xs tracking-wider uppercase font-medium transition-colors duration-200 ${
+                        isActive 
+                          ? 'text-black bg-gray-50' 
+                          : 'text-gray-400 hover:text-black hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
 
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                  isActive 
-                    ? 'text-black font-medium' 
-                    : 'text-gray-400 hover:text-black'
-                }`
-              }
-            >
-              Profile
-            </NavLink>
+                {/* Profile Link */}
+                <NavLink
+                  to="/profile"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `block px-6 py-4 text-xs tracking-wider uppercase font-medium transition-colors duration-200 ${
+                      isActive 
+                        ? 'text-black bg-gray-50' 
+                        : 'text-gray-400 hover:text-black hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  Profile
+                </NavLink>
 
-            {/* All other navigation links for mobile */}
-            {Object.values(navigationGroups).flat().filter(shouldShowLink).map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `text-xs tracking-wider uppercase transition-colors duration-200 ${
-                    isActive 
-                      ? 'text-black font-medium' 
-                      : 'text-gray-400 hover:text-black'
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
+                {/* Management Submenu for Admin */}
+                {user?.role === 'admin' && (
+                  <MobileSubmenu
+                    title="Manage"
+                    links={navigationGroups.management}
+                    isActive={activeMobileSubmenu === 'management'}
+                    onToggle={() => setActiveMobileSubmenu(
+                      activeMobileSubmenu === 'management' ? null : 'management'
+                    )}
+                  />
+                )}
 
-            {/* Mobile User Info */}
-            <div className="col-span-2 border-t border-gray-100 pt-4 mt-2">
-              <div className="text-xs text-gray-400">
-                <span className="capitalize">{user?.role}</span>
-                <span className="mx-2">•</span>
-                <span>{user?.name}</span>
+                {/* System Submenu for Admin */}
+                {user?.role === 'admin' && (
+                  <MobileSubmenu
+                    title="System"
+                    links={navigationGroups.system}
+                    isActive={activeMobileSubmenu === 'system'}
+                    onToggle={() => setActiveMobileSubmenu(
+                      activeMobileSubmenu === 'system' ? null : 'system'
+                    )}
+                  />
+                )}
+
+                {/* Tools Submenu for Admin/Mentor */}
+                {(user?.role === 'admin' || user?.role === 'mentor') && (
+                  <MobileSubmenu
+                    title="Tools"
+                    links={navigationGroups.tools}
+                    isActive={activeMobileSubmenu === 'tools'}
+                    onToggle={() => setActiveMobileSubmenu(
+                      activeMobileSubmenu === 'tools' ? null : 'tools'
+                    )}
+                  />
+                )}
+
+                {/* User Info & Logout */}
+                <div className="border-t border-gray-100 mt-2 pt-2">
+                  <div className="px-6 py-3 text-xs text-gray-400">
+                    <div className="font-medium text-gray-600">{user?.name}</div>
+                    <div className="text-xs text-gray-400 tracking-wider uppercase capitalize">{user?.role}</div>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      closeMobileMenu();
+                      handleLogout();
+                    }}
+                    className="w-full text-left px-6 py-4 text-xs tracking-wider uppercase font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+        )}
       </div>
-    </nav>
+    </>
   );
 };
 
