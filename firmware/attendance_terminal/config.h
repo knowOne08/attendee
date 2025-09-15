@@ -64,8 +64,12 @@
 #define DEFAULT_BACKEND_URL "https://api.xrocketry.in/"
 
 // WiFi Configuration Portal settings
-#define WIFI_CONFIG_PORTAL_TIMEOUT 300  // 5 minutes
+// Reduce portal timeout so device continues offline quickly when unattended
+#define WIFI_CONFIG_PORTAL_TIMEOUT 10   // seconds (skip config after 10s)
 #define WIFI_RECONNECT_TIMEOUT 30       // 30 seconds
+// Periodic reconnect to WiFi to try syncing offline logs
+#define WIFI_PERIODIC_RECONNECT_INTERVAL (2UL*60UL*60UL*1000UL) // 2 hours in ms
+#define WIFI_RECONNECT_ATTEMPT_WINDOW_MS 15000UL                // Try connect for 15s
 
 // NTP Settings
 #define NTP_SERVER "pool.ntp.org"
@@ -133,6 +137,10 @@
 #define RFID_GAIN_AVG       0x04        // Average antenna gain
 #define RFID_GAIN_MIN       0x01        // Minimum antenna gain
 #define RFID_DEFAULT_GAIN   RFID_GAIN_AVG
+
+// Periodic RFID maintenance to recover from reader stalls
+#define RFID_MAINTENANCE_INTERVAL_MS (5UL * 60UL * 1000UL)   // Re-init every 5 minutes
+#define RFID_REINIT_IF_IDLE_MS       (15UL * 60UL * 1000UL)  // If idle >15 minutes, force re-init
 
 // ========================================
 // STORAGE CONFIGURATION - LITTLEFS ONLY

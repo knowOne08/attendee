@@ -40,10 +40,9 @@ bool testInternetConnection();
 
 // RFID utility functions (MFRC522v2 specific)
 void initializeRFID();
-bool testRFIDConnection();
-String getRFIDVersion();
-void setRFIDGain(byte gain);
+void softResetRFID();
 byte getRFIDGain();
+void setRFIDGain(byte gain);
 bool isRFIDCardPresent();
 
 // System monitoring

@@ -230,10 +230,19 @@ String lastScannedMessage = "";
 int offlineLogsCount = 0;
 unsigned long lastCardScan = 0;
 
+// ----- RFID Watchdog/Maintenance Variables -----
+unsigned long lastRFIDMaintenance = 0;   // last periodic re-init
+unsigned long lastRFIDActivity = 0;      // updated on each detection/read
+int consecutiveRFIDReadFailures = 0;     // to trigger soft reset on repeated failures
+
 // ----- Network and Communication Variables -----
 bool isOnline = false;
 unsigned long lastHeartbeat = 0;
 unsigned long lastSyncAttempt = 0;
+// Track whether configServer has been started after connecting to WiFi
+bool configServerStarted = false;
+// Track periodic reconnect attempts when running offline
+unsigned long lastPeriodicReconnectAttempt = 0;
 
 // ========================================
 // NOTE: ARCHIVED FEATURES
@@ -406,6 +415,7 @@ void setup() {
   // Setup web-based configuration endpoints (replaces admin menu)
   if (WiFi.status() == WL_CONNECTED) {
     setupConfigurationEndpoints();
+    configServerStarted = true;
     Serial.println("Configuration API available at: http://" + WiFi.localIP().toString() + "/api/config");
     
     // Pre-warm HTTPS connection for faster first attendance submission
@@ -451,14 +461,70 @@ void loop() {
     checkWiFiConnection();
     lastWiFiCheck = millis();
   }
-  
-  // ========================================
-  // NOTE: Encoder input handling has been ARCHIVED
-  // See archived_features.h for the complete encoder implementation
-  // ========================================
+
+  // Periodically try to reconnect WiFi and sync when running offline
+  if (!isOnline && (millis() - lastPeriodicReconnectAttempt > WIFI_PERIODIC_RECONNECT_INTERVAL)) {
+    lastPeriodicReconnectAttempt = millis();
+    Serial.println("Periodic WiFi reconnect attempt...");
+    setLCDState(LCD_CONNECTION_PROGRESS, "Retry WiFi");
+
+    // Try to connect using stored credentials
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(); // Use saved credentials if available
+
+    unsigned long startAttempt = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - startAttempt) < WIFI_RECONNECT_ATTEMPT_WINDOW_MS) {
+      delay(500);
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      isOnline = true;
+      setLEDState(LED_GREEN);
+      Serial.println("Reconnected to WiFi during periodic attempt. IP: " + WiFi.localIP().toString());
+      syncTimeWithNTP();
+
+      // Start config server if not started yet
+      if (!configServerStarted) {
+        setupConfigurationEndpoints();
+        configServerStarted = true;
+        Serial.println("Configuration API available at: http://" + WiFi.localIP().toString() + "/api/config");
+      }
+
+      // Immediately try syncing offline logs
+      if (offlineLogsCount > 0) {
+        setLCDState(LCD_SYNC_PROGRESS);
+        syncOfflineLogs();
+        setLCDState(LCD_SYNC_COMPLETE);
+      }
+
+      delay(1000);
+      updateDisplay();
+    } else {
+      // Remain offline
+      isOnline = false;
+      setLEDState(LED_RED);
+      Serial.println("WiFi reconnect failed. Staying offline.");
+      delay(1000);
+      updateDisplay();
+    }
+  }
   
   // Handle RFID scanning - MAIN FUNCTION
   handleRFIDScan();
+
+  // RFID maintenance watchdog: periodic soft reset and idle recovery
+  unsigned long nowMillis = millis();
+  if (nowMillis - lastRFIDMaintenance > RFID_MAINTENANCE_INTERVAL_MS) {
+    Serial.println("RFID maintenance: periodic re-init");
+    softResetRFID();
+    lastRFIDMaintenance = nowMillis;
+  }
+  if (lastRFIDActivity > 0 && (nowMillis - lastRFIDActivity > RFID_REINIT_IF_IDLE_MS)) {
+    Serial.println("RFID maintenance: idle too long, forcing re-init");
+    softResetRFID();
+    lastRFIDActivity = nowMillis;
+    lastRFIDMaintenance = nowMillis;
+  }
   
   // Update LED state
   updateLED();
@@ -476,11 +542,6 @@ void loop() {
   if (isOnline && (millis() - lastHeartbeat > HEARTBEAT_INTERVAL)) {
     sendHeartbeat();
   }
-  
-  // ========================================
-  // NOTE: Admin menu handling has been ARCHIVED
-  // See archived_features.h for the complete admin menu implementation
-  // ========================================
   
   // Update display periodically
   static unsigned long lastDisplayUpdate = 0;
@@ -608,15 +669,17 @@ void initializeWiFi() {
   // Set custom AP name
   String apName = "Attendee_" + deviceId.substring(deviceId.length() - 6);
   
-  // Set timeout for config portal
+  // Set timeout for config portal (short, so device continues offline automatically)
   wifiManager.setConfigPortalTimeout(WIFI_CONFIG_PORTAL_TIMEOUT);
   
-  // Try to connect with saved credentials
+  // Try to connect with saved credentials, else briefly open portal
   if (!wifiManager.autoConnect(apName.c_str())) {
-    Serial.println("Failed to connect to WiFi. Restarting...");
-    setLCDState(LCD_RESTART, "WiFi Failed");
-    delay(2000);
-    ESP.restart();
+    Serial.println("WiFi not configured or unavailable. Continuing in offline mode.");
+    isOnline = false;
+    setLEDState(LED_RED);
+    updateDisplay();
+    // Do NOT restart; device will operate offline and retry periodically
+    return;
   }
   
   Serial.println("WiFi connected successfully");
@@ -637,6 +700,12 @@ void checkWiFiConnection() {
     syncTimeWithNTP();
     setLEDState(LED_GREEN);
     logInfo("WiFi reconnected - IP: " + WiFi.localIP().toString());
+    // Ensure config server is started on first connection
+    if (!configServerStarted) {
+      setupConfigurationEndpoints();
+      configServerStarted = true;
+      Serial.println("Configuration API available at: http://" + WiFi.localIP().toString() + "/api/config");
+    }
   } else if (wasOnline && !isOnline) {
     Serial.println("WiFi disconnected");
     setLEDState(LED_RED);
@@ -653,18 +722,30 @@ void checkWiFiConnection() {
 void handleRFIDScan() {
   // Check for new card with improved error handling
   if (!mfrc522.PICC_IsNewCardPresent()) {
-    // Serial.println("Returning from 1");
     return;
   }
+  lastRFIDActivity = millis();
   
   if (!mfrc522.PICC_ReadCardSerial()) {
+    consecutiveRFIDReadFailures++;
+    if (consecutiveRFIDReadFailures >= 5) {
+      Serial.println("RFID warning: consecutive read failures, soft resetting reader");
+      softResetRFID();
+      consecutiveRFIDReadFailures = 0;
+    }
     return;
   }
+  consecutiveRFIDReadFailures = 0;
+  lastRFIDActivity = millis();
 
   // Prevent duplicate reads
   unsigned long currentTime = millis();
   if (currentTime - lastCardScan < CARD_READ_DELAY) {
     mfrc522.PICC_HaltA();
+    // Stop crypto to ensure clean next transaction
+    #ifdef MFRC522_h
+    mfrc522.PCD_StopCrypto1();
+    #endif
     return;
   }
   lastCardScan = currentTime;
@@ -694,14 +775,8 @@ void handleRFIDScan() {
   // Brief pause to separate stage 1 from stage 2
   delay(200);
 
-  // ========================================
-  // NOTE: Admin tag check has been ARCHIVED
-  // See archived_features.h for the complete admin menu implementation
-  // ========================================
-
   // Get current timestamp
   String timestamp = getCurrentTimestamp();
-
 
   // Process attendance
   if (isOnline) {
@@ -710,12 +785,13 @@ void handleRFIDScan() {
     processOfflineAttendance(rfidTag, timestamp);
   }
 
-  // Halt communication with card
+  // Halt communication with card and stop crypto
   mfrc522.PICC_HaltA();
+  #ifdef MFRC522_h
+  mfrc522.PCD_StopCrypto1();
+  #endif
   delay(50);
 }
-
-
 
 // ========================================
 // ATTENDANCE PROCESSING
@@ -1357,35 +1433,16 @@ void handleGetDeviceStatus() {
   rfid["initialized"] = true; // Assume initialized if we got this far
   rfid["lastScan"] = lastCardScan;
   
-  // Logs information
-  JsonObject logs = response.createNestedObject("logs");
-  logs["offlineCount"] = offlineLogsCount;
-  logs["lastSync"] = lastSyncAttempt;
-  
-  // Last scanned information
-  JsonObject lastScan = response.createNestedObject("lastScan");
-  lastScan["name"] = lastScannedName;
-  lastScan["time"] = lastScannedTime;
-  lastScan["message"] = lastScannedMessage;
-  
+  // Return status only (no sync here)
   String responseString;
   serializeJson(response, responseString);
   configServer.send(200, "application/json", responseString);
 }
 
+// Force syncing of offline logs via API
 void handleForceSyncLogs() {
   sendCORSHeaders();
-  
-  if (!isOnline) {
-    configServer.send(400, "application/json", "{\"error\":\"Device is offline\"}");
-    return;
-  }
-  
-  if (offlineLogsCount == 0) {
-    configServer.send(200, "application/json", "{\"success\":true,\"message\":\"No logs to sync\"}");
-    return;
-  }
-  
+
   // Show sync in progress on LCD
   setLCDState(LCD_SYNC_PROGRESS);
   
@@ -1399,7 +1456,7 @@ void handleForceSyncLogs() {
   delay(3000);
   updateDisplay(); // Restore normal display
   
-  StaticJsonDocument<256> response;
+  StaticJsonDocument<512> response;
   response["success"] = true;
   response["syncedCount"] = syncedCount;
   response["remainingCount"] = offlineLogsCount;
@@ -2230,6 +2287,6 @@ void warmupHTTPSConnection() {
   } else {
     Serial.println("HTTPS warmup connection failed");
   }
-}
-
+  }
+  
 

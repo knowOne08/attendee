@@ -261,6 +261,22 @@ String getMACAddress() {
 
 void initializeRFID() {
   mfrc522.PCD_Init();
+  // Ensure antenna is on and set gain
+  mfrc522.PCD_AntennaOn();
+  setRFIDGain(RFID_DEFAULT_GAIN);
+}
+
+void softResetRFID() {
+  // Try graceful halt and soft reset
+  mfrc522.PICC_HaltA();
+  delay(5);
+  mfrc522.PCD_SoftPowerDown();
+  delay(10);
+  mfrc522.PCD_SoftPowerUp();
+  delay(25);
+  mfrc522.PCD_Init();
+  mfrc522.PCD_AntennaOn();
+  setRFIDGain(RFID_DEFAULT_GAIN);
 }
 
 void setRFIDGain(byte gain) {
