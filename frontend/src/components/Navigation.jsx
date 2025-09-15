@@ -53,7 +53,7 @@ const Navigation = () => {
     <div className="relative">
       <button
         onClick={onToggle}
-        className="flex items-center text-xs tracking-wider uppercase transition-colors duration-200 text-gray-400 hover:text-black group"
+        className="flex items-center text-xs tracking-wider uppercase transition-colors duration-200 text-gray-500 hover:text-black group"
       >
         {title}
         <svg 
@@ -116,13 +116,13 @@ const Navigation = () => {
     <div>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-6 py-4 text-left text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
+        className="w-full flex items-center justify-between px-6 py-4 text-left text-gray-600 hover:text-black hover:bg-gray-100 transition-colors duration-200"
       >
         <span className="text-xs tracking-wider uppercase font-medium">{title}</span>
         <ChevronIcon isOpen={isActive} />
       </button>
       {isActive && (
-        <div className="bg-gray-50">
+        <div className="bg-gray-100">
           {links.filter(shouldShowLink).map((link) => (
             <NavLink
               key={link.to}
@@ -131,8 +131,8 @@ const Navigation = () => {
               className={({ isActive }) =>
                 `block px-8 py-3 text-xs tracking-wider uppercase transition-colors duration-200 ${
                   isActive 
-                    ? 'text-black font-medium bg-gray-100' 
-                    : 'text-gray-400 hover:text-black hover:bg-gray-100'
+                    ? 'text-black font-semibold bg-gray-200' 
+                    : 'text-gray-500 hover:text-black hover:bg-gray-200'
                 }`
               }
             >
@@ -146,19 +146,19 @@ const Navigation = () => {
 
   return (
     <>
-      {/* Desktop Navigation */}
-      <nav className="hidden lg:block border-b border-gray-100 bg-white sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between py-4 sm:py-6">
+      {/* Desktop Navigation - Floating */}
+      <nav className="hidden lg:block sticky top-4 z-50 px-4">
+        <div className="max-w-6xl mx-auto bg-gray-50 border border-gray-200 rounded-full shadow-lg">
+          <div className="flex items-center justify-between py-2 px-8">
             {/* Logo/Title */}
             <div className="flex-shrink-0">
-              <h1 className="text-lg font-medium text-black tracking-tight">
-                Attendee
+              <h1 className="text-base font-semibold text-black tracking-tight">
+                attendee
               </h1>
             </div>
 
             {/* Navigation Links - Desktop */}
-            <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-6">
               {/* Primary Navigation */}
               {navigationGroups.primary.filter(shouldShowLink).map((link) => (
                 <NavLink
@@ -167,8 +167,8 @@ const Navigation = () => {
                   className={({ isActive }) =>
                     `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
                       isActive 
-                        ? 'text-black font-medium' 
-                        : 'text-gray-400 hover:text-black'
+                        ? 'text-black font-semibold' 
+                        : 'text-gray-500 hover:text-black'
                     }`
                   }
                 >
@@ -182,8 +182,8 @@ const Navigation = () => {
                 className={({ isActive }) =>
                   `text-xs tracking-wider uppercase transition-colors duration-200 whitespace-nowrap ${
                     isActive 
-                      ? 'text-black font-medium' 
-                      : 'text-gray-400 hover:text-black'
+                      ? 'text-black font-semibold' 
+                      : 'text-gray-500 hover:text-black'
                   }`
                 }
               >
@@ -220,8 +220,8 @@ const Navigation = () => {
               )}
 
               {/* User Info & Logout - Desktop */}
-              <div className="flex items-center space-x-4 border-l border-gray-200 pl-8">
-                <div className="text-xs text-gray-400">
+              <div className="flex items-center space-x-3 border-l border-gray-200 pl-6">
+                <div className="text-xs text-gray-500">
                   <span className="capitalize">{user?.role}</span>
                   <span className="mx-2">•</span>
                   <span className="hidden md:inline">{user?.name}</span>
@@ -229,7 +229,7 @@ const Navigation = () => {
                 
                 <button
                   onClick={handleLogout}
-                  className="text-xs text-gray-400 tracking-wider uppercase hover:text-black transition-colors duration-200"
+                  className="text-xs text-gray-500 tracking-wider uppercase hover:text-black transition-colors duration-200"
                 >
                   Logout
                 </button>
@@ -239,21 +239,21 @@ const Navigation = () => {
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <div className="lg:hidden">
+      {/* Mobile Navigation - Floating */}
+      <div className="lg:hidden sticky top-4 z-50 px-4 mb-6">
         {/* Mobile Top Bar */}
-        <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-medium text-black tracking-tight">
-            Attendee
+        <div className="bg-gray-50 border border-gray-200 rounded-full shadow-lg px-6 py-2 flex items-center justify-between">
+          <h1 className="text-base font-semibold text-black tracking-tight">
+            attendee
           </h1>
           
           <div className="flex items-center space-x-3">
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-gray-500">
               <span className="capitalize">{user?.role}</span>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-gray-400 hover:text-black transition-colors duration-200"
+              className="p-1.5 text-gray-500 hover:text-black transition-colors duration-200"
             >
               {isMobileMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
             </button>
@@ -262,7 +262,7 @@ const Navigation = () => {
 
         {/* Mobile Floating Menu */}
         {isMobileMenuOpen && (
-          <div className="fixed top-16 left-4 right-4 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 max-h-[70vh] overflow-y-auto">
+          <div className="mt-2 bg-gray-50 border border-gray-200 rounded-3xl shadow-xl max-h-[70vh] overflow-y-auto">
               <div className="py-2">
                 {/* Primary Navigation */}
                 {navigationGroups.primary.filter(shouldShowLink).map((link) => (
@@ -271,10 +271,10 @@ const Navigation = () => {
                     to={link.to}
                     onClick={closeMobileMenu}
                     className={({ isActive }) =>
-                      `block px-6 py-4 text-xs tracking-wider uppercase font-medium transition-colors duration-200 ${
+                      `block px-6 py-4 text-xs tracking-wider uppercase font-semibold transition-colors duration-200 ${
                         isActive 
-                          ? 'text-black bg-gray-50' 
-                          : 'text-gray-400 hover:text-black hover:bg-gray-50'
+                          ? 'text-black bg-gray-100' 
+                          : 'text-gray-500 hover:text-black hover:bg-gray-100'
                       }`
                     }
                   >
@@ -287,10 +287,10 @@ const Navigation = () => {
                   to="/profile"
                   onClick={closeMobileMenu}
                   className={({ isActive }) =>
-                    `block px-6 py-4 text-xs tracking-wider uppercase font-medium transition-colors duration-200 ${
+                    `block px-6 py-4 text-xs tracking-wider uppercase font-semibold transition-colors duration-200 ${
                       isActive 
-                        ? 'text-black bg-gray-50' 
-                        : 'text-gray-400 hover:text-black hover:bg-gray-50'
+                        ? 'text-black bg-gray-100' 
+                        : 'text-gray-500 hover:text-black hover:bg-gray-100'
                     }`
                   }
                 >
@@ -334,10 +334,10 @@ const Navigation = () => {
                 )}
 
                 {/* User Info & Logout */}
-                <div className="border-t border-gray-100 mt-2 pt-2">
-                  <div className="px-6 py-3 text-xs text-gray-400">
-                    <div className="font-medium text-gray-600">{user?.name}</div>
-                    <div className="text-xs text-gray-400 tracking-wider uppercase capitalize">{user?.role}</div>
+                <div className="border-t border-gray-200 mt-2 pt-2">
+                  <div className="px-6 py-3 text-xs text-gray-500">
+                    <div className="font-semibold text-gray-600">{user?.name}</div>
+                    <div className="text-xs text-gray-500 tracking-wider uppercase capitalize">{user?.role}</div>
                   </div>
                   
                   <button
@@ -345,7 +345,7 @@ const Navigation = () => {
                       closeMobileMenu();
                       handleLogout();
                     }}
-                    className="w-full text-left px-6 py-4 text-xs tracking-wider uppercase font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                    className="w-full text-left px-6 py-4 text-xs tracking-wider uppercase font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
                   >
                     Logout
                   </button>
