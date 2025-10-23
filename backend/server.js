@@ -30,14 +30,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Add request logging middleware for debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  console.log('Origin:', req.get('origin'));
-  console.log('Headers:', req.headers);
-  next();
-});
 app.use(express.json());
 
 // Connect to MongoDB

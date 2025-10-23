@@ -36,14 +36,18 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error.message);
+    // Only log non-JWT errors to reduce noise
+    if (error.name !== 'TokenExpiredError' && error.name !== 'JsonWebTokenError') {
+      console.error('Auth middleware error:', error.message);
+    }
     
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Invalid token' });
     } else if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
     }
     
+    console.error('Auth middleware server error:', error.message);
     res.status(500).json({ error: 'Server error in authentication' });
   }
 };
