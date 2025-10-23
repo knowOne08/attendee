@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Navigation from './components/Navigation';
+import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
@@ -23,16 +24,17 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <div className="min-h-screen bg-white">
-            <Navigation />
             <Routes>
               {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<><Navigation /><Login /></>} />
               
               {/* Protected Routes */}
               <Route 
                 path="/dashboard" 
                 element={
                   <ProtectedRoute>
+                    <Navigation />
                     <Dashboard />
                   </ProtectedRoute>
                 } 
@@ -42,6 +44,7 @@ function App() {
                 path="/profile" 
                 element={
                   <ProtectedRoute>
+                    <Navigation />
                     <Profile />
                   </ProtectedRoute>
                 } 
@@ -51,6 +54,7 @@ function App() {
                 path="/attendance" 
                 element={
                   <ProtectedRoute adminOnly={true}>
+                    <Navigation />
                     <Attendance />
                   </ProtectedRoute>
                 } 
@@ -60,6 +64,7 @@ function App() {
                 path="/members" 
                 element={
                   <ProtectedRoute adminOnly={true}>
+                    <Navigation />
                     <Members />
                   </ProtectedRoute>
                 } 
@@ -69,6 +74,7 @@ function App() {
                 path="/signup" 
                 element={
                   <ProtectedRoute adminOnly={true}>
+                    <Navigation />
                     <Signup />
                   </ProtectedRoute>
                 } 
@@ -78,6 +84,7 @@ function App() {
                 path="/attendance/history" 
                 element={
                   <ProtectedRoute mentorOrAdminOnly={true}>
+                    <Navigation />
                     <AttendanceHistory />
                   </ProtectedRoute>
                 } 
@@ -87,6 +94,7 @@ function App() {
                 path="/attendance/manual" 
                 element={
                   <ProtectedRoute mentorOrAdminOnly={true}>
+                    <Navigation />
                     <ManualAttendance />
                   </ProtectedRoute>
                 } 
@@ -96,6 +104,7 @@ function App() {
                 path="/user/:id" 
                 element={
                   <ProtectedRoute>
+                    <Navigation />
                     <UserDetail />
                   </ProtectedRoute>
                 } 
@@ -105,6 +114,7 @@ function App() {
                 path="/system-status" 
                 element={
                   <ProtectedRoute adminOnly={true}>
+                    <Navigation />
                     <SystemStatus />
                   </ProtectedRoute>
                 } 
@@ -114,13 +124,11 @@ function App() {
                 path="/device-admin" 
                 element={
                   <ProtectedRoute adminOnly={true}>
+                    <Navigation />
                     <DeviceAdmin />
                   </ProtectedRoute>
                 } 
               />
-              
-              {/* Default Redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               
               {/* 404 Page */}
               <Route 
