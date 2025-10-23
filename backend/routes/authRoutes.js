@@ -7,6 +7,11 @@ const router = express.Router();
 
 // Helper function to generate JWT token
 const generateToken = (userId, role) => {
+  if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET not configured!');
+    throw new Error('JWT_SECRET not configured');
+  }
+  
   return jwt.sign(
     { userId, role },
     process.env.JWT_SECRET,
@@ -78,33 +83,44 @@ router.post('/register', authMiddleware, adminMiddleware, async (req, res) => {
 // POST /auth/login - Login user
 router.post('/login', async (req, res) => {
   try {
+    console.log('🔐 Login attempt:', req.body.email);
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Find user by email
+    console.log('🔍 Looking for user:', email);
     const user = await User.findByEmail(email);
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    console.log('✅ User found:', user.email, 'Status:', user.status);
+
     // Check if user is active
     if (user.status === 'inactive') {
+      console.log('❌ User inactive:', email);
       return res.status(401).json({ error: 'Account is inactive. Please contact an administrator.' });
     }
 
     // Check password
+    console.log('🔑 Checking password...');
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      console.log('❌ Invalid password for:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    console.log('✅ Password valid, generating token...');
     // Generate token
     const token = generateToken(user._id, user.role);
 
+    console.log('🎉 Login successful for:', user.email);
     res.json({
       message: 'Login successful',
       user: user.toJSON(),
@@ -112,7 +128,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('💥 Login error:', error);
     res.status(500).json({ error: 'Server error during login' });
   }
 });
